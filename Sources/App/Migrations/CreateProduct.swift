@@ -15,6 +15,10 @@ struct CreateProduct: AsyncMigration {
       .field("name", .string, .required)
       .field("description", .string, .required)
       .field("image_path", .string, .required)
+      .field("price", .double, .required)
+      .field("quantity", .int, .required)
+      .field("created_at", .datetime)
+      .field("updated_at", .datetime)
       .create()
   }
 

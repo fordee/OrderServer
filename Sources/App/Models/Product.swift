@@ -23,6 +23,19 @@ final class Product: Model {
   @Field(key: "image_path")
   var imagePath: String
 
+  @Field(key: "price")
+  var price: Double
+
+  @Field(key: "quantity")
+  var quantity: Int
+
+  @Timestamp(key: "created_at", on: .create)
+  var createdAt: Date?
+
+  // When this Planet was last updated.
+  @Timestamp(key: "updated_at", on: .update)
+  var updatedAt: Date?
+
   init() {}
 
   init(id: UUID? = nil, name: String, description: String, imagePath: String) {
@@ -31,6 +44,7 @@ final class Product: Model {
     self.description = description
     self.imagePath = imagePath
   }
+  
 }
 
 extension Product: Content {}
