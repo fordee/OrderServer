@@ -9,7 +9,7 @@ import Vapor
 import Fluent
 
 final class Product: Model {
-  static let schema = "products"
+  static let schema = "product"
 
   @ID
   var id: UUID?
