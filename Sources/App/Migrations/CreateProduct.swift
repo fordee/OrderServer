@@ -10,7 +10,7 @@ import Fluent
 struct CreateProduct: Migration {
 
   func prepare(on database: Database) async throws {
-    database.schema("product")
+    database.schema("products")
       .id()
       .field("name", .string, .required)
       .field("description", .string, .required)
@@ -19,6 +19,6 @@ struct CreateProduct: Migration {
   }
 
   func revert(on database: Database) async throws {
-    database.schema("product").delete()
+    database.schema("products").delete()
   }
 }
