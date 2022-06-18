@@ -2,9 +2,33 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Hello World</title>
+    <title>#(title) | Products</title>
   </head>
   <body>
-    <h1>Hello World</h1>
+    <h1>Products</h1>
+    #if(products):
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Price</th>
+            <th>Quantity</th>
+          </tr>
+        </thead>
+        <tbody>
+          #for(product in products):
+            <tr>
+              <td>#(product.name)</td>
+              <td>#(product.description)</td>
+              <td>#(product.price)</td>
+              <td>#(product.quantity)</td>
+            </tr>
+          #endfor
+        </tbody>
+      </table>
+    #else:
+      <h2>There aren’t any products yet!</h2>
+    #endif
   </body>
 </html>
