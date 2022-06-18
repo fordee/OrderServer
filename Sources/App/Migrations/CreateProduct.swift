@@ -9,7 +9,7 @@ import Fluent
 
 struct CreateProduct: Migration {
 
-  func prepare(on database: Database) -> EventLoopFuture<Void> {
+  func prepare(on database: Database) async throws {
     database.schema("product")
       .id()
       .field("name", .string, .required)
@@ -18,7 +18,7 @@ struct CreateProduct: Migration {
       .create()
   }
 
-  func revert(on database: Database) -> EventLoopFuture<Void> {
+  func revert(on database: Database) async throws {
     database.schema("product").delete()
   }
 }

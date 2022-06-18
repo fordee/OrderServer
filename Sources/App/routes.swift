@@ -9,5 +9,12 @@ func routes(_ app: Application) throws {
   app.get("hello") { req -> String in
     return "Hello, world!"
   }
+
+  app.post("api", "products") { req -> EventLoopFuture<Product> in
+    let product = try req.content.decode(Product.self)
+    return product.save(on: req.db).map {
+      product
+    }
+  }
   
 }

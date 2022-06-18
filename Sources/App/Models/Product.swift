@@ -32,3 +32,5 @@ final class Product: Model {
     self.imagePath = imagePath
   }
 }
+
+extension Product: Content {}
