@@ -10,11 +10,19 @@ func routes(_ app: Application) throws {
     return "Hello, world!"
   }
 
-  app.post("api", "products") { req -> EventLoopFuture<Product> in
-    let product = try req.content.decode(Product.self)
-    return product.save(on: req.db).map {
-      product
-    }
-  }
+  let productsController = ProductsController()
+  try app.register(collection: productsController)
+
+//  app.post("api", "products") { req -> EventLoopFuture<Product> in
+//    let product = try req.content.decode(Product.self)
+//    return product.save(on: req.db).map {
+//      product
+//    }
+//  }
+//
+//  app.get("api", "products", ":productID") { req -> EventLoopFuture<Product> in
+//    Product.find(req.parameters.get("productID"), on: req.db)
+//      .unwrap(or: Abort(.notFound))
+//  }
   
 }
