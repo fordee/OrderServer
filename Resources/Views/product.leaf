@@ -2,6 +2,7 @@
   #export("content"):
     <h1>#(product.name)</h1>
     <h2>#(product.description)</h2>
+    <img src="#(product.imagePath)" class="rounded float-left alt="#(product.imagePath)"/>
     <h2>Price: #(product.price)</h2>
     <h2>Quantity: #(product.quantity)</h2>
   #endexport
