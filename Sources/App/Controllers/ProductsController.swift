@@ -47,6 +47,8 @@ struct ProductsController: RouteCollection {
     product.name = updatedProduct.name
     product.description = updatedProduct.description
     product.imagePath = updatedProduct.imagePath
+    product.price = updatedProduct.price
+    product.quantity = updatedProduct.quantity
     try await product.save(on: req.db)
     return product
   }
