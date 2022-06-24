@@ -18,10 +18,16 @@ struct ProductContext: Encodable {
   let product: Product
 }
 
+struct UploadContext: Encodable {
+  let title: String
+  let username: String
+}
+
 struct WebsiteController: RouteCollection {
   func boot(routes: RoutesBuilder) throws {
     routes.get(use: indexHandler)
     routes.get("products", ":productID", use: productHandler)
+    routes.get("upload", ":productID", use: uploadHandler)
   }
 
   func indexHandler(_ req: Request) async throws -> View {
@@ -37,4 +43,16 @@ struct WebsiteController: RouteCollection {
     let context = ProductContext(title: product.name, product: product)
     return try await req.view.render("product", context)
   }
+
+  func uploadHandler(_ req: Request) async throws -> View {
+    guard let product = try await Product.find(req.parameters.get("productID"), on: req.db) else {
+      throw Abort(.notFound)
+    }
+    let context = ProductContext(title: "File Upload", product: product)
+    return try await req.view.render("upload", context)
+  }
+}
+
+struct ImageUploadData: Content {
+  var picture: Data
 }
