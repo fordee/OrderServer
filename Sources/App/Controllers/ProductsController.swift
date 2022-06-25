@@ -21,6 +21,8 @@ struct ProductsController: RouteCollection {
     productsRoutes.get("first", use: getFirstHandler)
     productsRoutes.get("sorted", use: sortedHandler)
     productsRoutes.post("upload", ":productID", use: productImageHandler)
+    productsRoutes.post("upload-mobile", ":productID", use: productMobileImageHandler)
+    productsRoutes.post("upload-mobile2", ":productID", use: uploadImageHandler)
   }
 
   func getAllHandler(_ req: Request) async throws -> [Product] {
@@ -80,46 +82,10 @@ struct ProductsController: RouteCollection {
       .sort(\.$name, .ascending).all()
   }
 
-  func uploadImage(_ req: Request) async throws -> HTTPStatus {
-    let uuid = req.parameters.get("id", as: UUID.self)
-    let file = try req.content.decode(File.self)
-    var fileName = "\(uuid?.uuidString ?? "").\(Date().timeIntervalSince1970)"
-    fileName = file.extension.flatMap { "\(fileName).\($0)" } ?? fileName
-    let path = req.application.directory.workingDirectory + fileName
-
-    //    guard file.isImage else {
-    //      throw Abort(.badRequest)
-    //    }
-
-    try await req.fileio.writeFile(file.data, at: path)
-    return .ok
-  }
-
-  func upload(_ req: Request) async throws -> HTTPStatus {
-    struct Input: Content {
-      var file: File
-    }
-    let input = try req.content.decode(File.self)
-
-    let path = req.application.directory.publicDirectory + input.filename
-
-    let fileData = try await req.fileio.collectFile(at: path)
-    try await req.fileio.writeFile(fileData, at: path)
-    return .ok
-//    .flatMap { handle in
-//      req.application.fileio.write(fileHandle: handle,
-//                                   buffer: input.file.data,
-//                                   eventLoop: req.eventLoop)
-//      .flatMapThrowing { _ in
-//        try handle.close()
-//        return input.file.filename
-//      }
-//    }
-  }
   func productImageHandler(_ req: Request) async throws -> Response {
-    struct UserFile: Content {
-      var data: Data
-    }
+//    struct UserFile: Content {
+//      var data: Data
+//    }
 
     guard let product = try await Product.find(req.parameters.get("productID"), on: req.db) else { throw Abort(.noContent) }
 
@@ -127,8 +93,6 @@ struct ProductsController: RouteCollection {
       var file: File
     }
     let data = try req.content.decode(Input.self)
-
-    //let data = try req.content.decode(ImageUploadData.self)
 
     print("ContentType: \(data.file.filename)")
     guard let id = product.id else { return req.redirect(to: "/") } // If no id, can't upload image yet.
@@ -145,4 +109,54 @@ struct ProductsController: RouteCollection {
     return req.redirect(to: "/")
   }
 
+  func productMobileImageHandler(_ req: Request) async throws -> Response {
+    struct Media: Codable {
+      let file: Data
+    }
+
+    guard let product = try await Product.find(req.parameters.get("productID"), on: req.db) else { throw Abort(.noContent) }
+
+    let media = try req.content.decode(Media.self)
+
+    //print("File: \(media.file)")
+    guard let id = product.id else { return req.redirect(to: "/") } // If no id, can't upload image yet.
+
+    //let randomString = String(Int.random())
+    let imageName = "/images/" + id.uuidString /* + randomString */ + ".jpeg"
+
+    product.imagePath = imageName
+
+    print("ImagePath: \(imageName)")
+    let path = req.application.directory.publicDirectory + imageName
+
+    try await req.fileio.writeFile(ByteBuffer(data: media.file), at: path)
+    try await product.save(on: req.db)
+    return req.redirect(to: "/")
+  }
+
+  func uploadImageHandler(_ req: Request) async throws -> Response {
+    guard let product = try await Product.find(req.parameters.get("productID"), on: req.db) else { throw Abort(.noContent) }
+    guard let bodyData = req.body.data else { throw Abort(.noContent) }
+    let media = try JSONDecoder().decode(MediaUpload.self, from: bodyData)
+
+    //let randomString = String(Int.random())
+    guard let id = product.id else { return req.redirect(to: "/") } // If no id, can't upload image yet.
+    let imageName = "/images/" + id.uuidString /* + randomString */ + "." + media.fileExtension
+
+    product.imagePath = imageName
+
+    print("ImagePath: \(imageName)")
+    let path = req.application.directory.publicDirectory + imageName
+
+    try await req.fileio.writeFile(ByteBuffer(data: media.image), at: path)
+    try await product.save(on: req.db)
+    return req.redirect(to: "/")
+  }
+
 }
+
+struct MediaUpload: Codable {
+  let fileExtension: String
+  let image: Data
+}
+
