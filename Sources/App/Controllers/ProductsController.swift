@@ -20,9 +20,7 @@ struct ProductsController: RouteCollection {
     productsRoutes.get("search", use: searchHandler)
     productsRoutes.get("first", use: getFirstHandler)
     productsRoutes.get("sorted", use: sortedHandler)
-    productsRoutes.post("upload", ":productID", use: productImageHandler)
-    productsRoutes.post("upload-mobile", ":productID", use: productMobileImageHandler)
-    productsRoutes.post("upload-mobile2", ":productID", use: uploadImageHandler)
+    productsRoutes.post("upload", ":productID", use: uploadImageHandler)
   }
 
   func getAllHandler(_ req: Request) async throws -> [Product] {
@@ -82,66 +80,12 @@ struct ProductsController: RouteCollection {
       .sort(\.$name, .ascending).all()
   }
 
-  func productImageHandler(_ req: Request) async throws -> Response {
-//    struct UserFile: Content {
-//      var data: Data
-//    }
-
-    guard let product = try await Product.find(req.parameters.get("productID"), on: req.db) else { throw Abort(.noContent) }
-
-    struct Input: Content {
-      var file: File
-    }
-    let data = try req.content.decode(Input.self)
-
-    print("ContentType: \(data.file.filename)")
-    guard let id = product.id else { return req.redirect(to: "/") } // If no id, can't upload image yet.
-
-    let imageName = "/images/" + String("\(id).\(data.file.extension ?? "jpg")")
-
-    product.imagePath = imageName
-
-    print("ImagePath: \(imageName)")
-    let path = req.application.directory.publicDirectory + imageName
-
-    try await req.fileio.writeFile(data.file.data, at: path)
-    try await product.save(on: req.db)
-    return req.redirect(to: "/")
-  }
-
-  func productMobileImageHandler(_ req: Request) async throws -> Response {
-    struct Media: Codable {
-      let file: Data
-    }
-
-    guard let product = try await Product.find(req.parameters.get("productID"), on: req.db) else { throw Abort(.noContent) }
-
-    let media = try req.content.decode(Media.self)
-
-    //print("File: \(media.file)")
-    guard let id = product.id else { return req.redirect(to: "/") } // If no id, can't upload image yet.
-
-    //let randomString = String(Int.random())
-    let imageName = "/images/" + id.uuidString /* + randomString */ + ".jpeg"
-
-    product.imagePath = imageName
-
-    print("ImagePath: \(imageName)")
-    let path = req.application.directory.publicDirectory + imageName
-
-    try await req.fileio.writeFile(ByteBuffer(data: media.file), at: path)
-    try await product.save(on: req.db)
-    return req.redirect(to: "/")
-  }
-
-  func uploadImageHandler(_ req: Request) async throws -> Response {
+  func uploadImageHandler(_ req: Request) async throws -> Product {
     guard let product = try await Product.find(req.parameters.get("productID"), on: req.db) else { throw Abort(.noContent) }
     guard let bodyData = req.body.data else { throw Abort(.noContent) }
     let media = try JSONDecoder().decode(MediaUpload.self, from: bodyData)
 
-    //let randomString = String(Int.random())
-    guard let id = product.id else { return req.redirect(to: "/") } // If no id, can't upload image yet.
-    let imageName = "/images/" + id.uuidString /* + randomString */ + "." + media.fileExtension
+    let imageName = "/images/" + UUID().uuidString + "." + media.fileExtension
 
     product.imagePath = imageName
 
@@ -150,7 +94,7 @@ struct ProductsController: RouteCollection {
 
     try await req.fileio.writeFile(ByteBuffer(data: media.image), at: path)
     try await product.save(on: req.db)
-    return req.redirect(to: "/")
+    return product
   }
 
 }
