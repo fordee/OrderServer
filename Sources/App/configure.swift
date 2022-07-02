@@ -19,6 +19,7 @@ public func configure(_ app: Application) throws {
   ), as: .psql)
   
   app.migrations.add(CreateProduct())
+  app.migrations.add(CreateStockPurchase())
 
   app.logger.logLevel = .debug
 

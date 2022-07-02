@@ -7,5 +7,8 @@ func routes(_ app: Application) throws {
 
   let websiteController = WebsiteController()
   try app.register(collection: websiteController)
+
+  let stockPurchasesHandler = StockPurchasesController()
+  try app.register(collection: stockPurchasesHandler)
   
 }
