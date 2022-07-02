@@ -21,6 +21,7 @@ struct StockPurchasesController: RouteCollection {
     try await stockPurchase.save(on: req.db)
     // TODO: Recalculate product's average price
     try await recalculateAveragePrice(productId: stockPurchase.productId, req: req)
+    try await newRealculateAveragePrice(stockPurchase: stockPurchase, req: req)
     return stockPurchase
   }
 
@@ -35,6 +36,7 @@ struct StockPurchasesController: RouteCollection {
     try await stockPurchase.save(on: req.db)
     // TODO: Recalculate product's average price
     try await recalculateAveragePrice(productId: stockPurchase.productId, req: req)
+    try await newRealculateAveragePrice(stockPurchase: stockPurchase, req: req)
     return stockPurchase
   }
 
@@ -70,6 +72,16 @@ struct StockPurchasesController: RouteCollection {
     product.price = weightedAveragePrice
     product.quantity = totalQuantity
     try await product.save(on: req.db)
+  }
+
+  func newRealculateAveragePrice(stockPurchase: StockPurchase, req: Request) async throws {
+    guard let product = try await Product.find(stockPurchase.productId, on: req.db) else {
+      throw Abort(.notFound)
+    }
+
+    let totalQuantity = Double(stockPurchase.quantity + product.quantity)
+    let weightedAveragePrice = ((product.price * Double(product.quantity)) + (stockPurchase.price * Double(stockPurchase.quantity))) / totalQuantity
+    print("new weighted average price: \(weightedAveragePrice)")
   }
 
 }
