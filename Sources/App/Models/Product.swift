@@ -29,6 +29,9 @@ final class Product: Model {
   @Field(key: "quantity")
   var quantity: Int
 
+  @Field(key: "average_purchase_price")
+  var averagePurchasePrice: Double
+
   @Timestamp(key: "created_at", on: .create)
   var createdAt: Date?
 

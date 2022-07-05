@@ -17,6 +17,7 @@ struct CreateProduct: AsyncMigration {
       .field("image_path", .string, .required)
       .field("price", .double, .required)
       .field("quantity", .int, .required)
+      .field("average_purchase_price", .double, .required)
       .field("created_at", .datetime)
       .field("updated_at", .datetime)
       .create()
