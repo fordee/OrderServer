@@ -10,5 +10,11 @@ func routes(_ app: Application) throws {
 
   let stockPurchasesHandler = StockPurchasesController()
   try app.register(collection: stockPurchasesHandler)
+
+  let customersController = CustomersController()
+  try app.register(collection: customersController)
+
+  let customerPurchasesConroller = CustomerPurchasesController()
+  try app.register(collection: customerPurchasesConroller)
   
 }
