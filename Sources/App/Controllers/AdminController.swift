@@ -46,7 +46,7 @@ struct AdminController: RouteCollection {
         // Don't save TODO: Do we update?
         print("\(reservation.reservationId) already exists. Didn't save.")
       } else {
-        //try await reservation.save(on: req.db)
+        try await reservation.save(on: req.db)
         print("Saving \(reservation.reservationId)")
       }
     }
