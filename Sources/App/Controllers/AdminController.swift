@@ -40,33 +40,36 @@ struct AdminController: RouteCollection {
     let fileContents = String(buffer: buffer)
 
     let reservations = parseFile(fileContents: fileContents)
+    print(reservations)
 
     return req.redirect(to: "/")
 
   }
 
   func parseFile(fileContents: String) -> [Reservation] {
-    let reservations: [Reservation] = []
+    var reservations: [Reservation] = []
+    let pattern = "Reservation URL: https://www.airbnb.com/hosting/reservations/details/(?<id>[A-Z0-9]*)"
+    guard let regex = try? NSRegularExpression(pattern: pattern) else { return reservations } // Fail if it can't be created
 
     var calendarParser = CalendarParser(fileContents)
     calendarParser.parseIcalFile()
     print(calendarParser.events)
 
     for event in calendarParser.events {
-      if let endDate = event.dtend, let description = event.description {
-        var reservationId = ""
-        let regex = /Reservation URL: https:\/\/www.airbnb.com\/hosting\/reservations\/details\/(?<id>[A-Z0-9]*)/
-        do {
-          if let result = try regex.prefixMatch(in: description) {
-            print(result.id)
-            reservationId = String(result.id)
-          }
-        } catch {
-          print(error)
-        }
-        let reservation = Reservation(startDate: event.dtstart.date!, endDate: endDate.date!, reservationId: reservationId, iCalDescription: event.description!)
-        //let reservation = Reservation(startDate: event.dtstart, endDate: endDate, reservationId: reservationId, iCalDescription: description)
-        //reservations.append(reservation)
+      if let endDate = event.dtend?.date, let description = event.description {
+        let reservationId = ""
+//        let regex = /Reservation URL: https:\/\/www.airbnb.com\/hosting\/reservations\/details\/(?<id>[A-Z0-9]*)/
+//        do {
+//          if let result = try regex.prefixMatch(in: description) {
+//            print(result.id)
+//            reservationId = String(result.id)
+//          }
+//        } catch {
+//          print(error)
+//        }
+        let reservation = Reservation(startDate: event.dtstart.date!, endDate: endDate, reservationId: reservationId, iCalDescription: description, uid: event.uid)
+        reservations.append(reservation)
+        print("Event Summary: \(event.summary)")
       }
     }
 

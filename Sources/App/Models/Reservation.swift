@@ -38,7 +38,7 @@ final class Reservation: Model {
 
   init() {}
 
-  init(id: UUID? = nil, startDate: Date, endDate: Date, reservationId: String, iCalDescription: String, createdAt: Date? = nil, updatedAt: Date? = nil) {
+  init(id: UUID? = nil, startDate: Date, endDate: Date, reservationId: String, iCalDescription: String, uid: String, createdAt: Date? = nil, updatedAt: Date? = nil) {
     self.id = id
     self.startDate = startDate
     self.endDate = endDate
