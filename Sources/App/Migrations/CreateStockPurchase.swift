@@ -6,7 +6,6 @@
 //
 
 import Foundation
-
 import Fluent
 
 struct CreateStockPurchase: AsyncMigration {

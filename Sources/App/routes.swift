@@ -16,5 +16,8 @@ func routes(_ app: Application) throws {
 
   let customerPurchasesConroller = CustomerPurchasesController()
   try app.register(collection: customerPurchasesConroller)
+
+  let adminController = AdminController()
+  try app.register(collection: adminController)
   
 }

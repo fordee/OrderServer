@@ -22,6 +22,7 @@ public func configure(_ app: Application) throws {
   app.migrations.add(CreateStockPurchase())
   app.migrations.add(CreateCustomer())
   app.migrations.add(CreateCustomerPurchase())
+  app.migrations.add(CreateReservation())
 
   app.logger.logLevel = .debug
 

@@ -23,11 +23,16 @@ struct UploadContext: Encodable {
   let username: String
 }
 
+struct ICalUploadContext: Encodable {
+  let title: String
+}
+
 struct WebsiteController: RouteCollection {
   func boot(routes: RoutesBuilder) throws {
     routes.get(use: indexHandler)
     routes.get("products", ":productID", use: productHandler)
     routes.get("upload", ":productID", use: uploadHandler)
+    routes.get("admin", use: adminHandler)
   }
 
   func indexHandler(_ req: Request) async throws -> View {
@@ -50,6 +55,11 @@ struct WebsiteController: RouteCollection {
     }
     let context = ProductContext(title: "File Upload", product: product)
     return try await req.view.render("upload", context)
+  }
+
+  func adminHandler(_ req: Request) async throws -> View {
+    let context =  ICalUploadContext(title: "Admin")
+    return try await req.view.render("admin", context)
   }
 }
 

@@ -16,23 +16,8 @@ struct CalendarParser {
 
   var events: [VEvent] = []
 
-  init() {
-    loadIcalFile()
-  }
-
-  mutating func loadIcalFile() {
-    //if let iCalFile = Bundle.main.path(forResource: "listing-16234504", ofType: "ics") {
-      //do {
-        fileContents = ""//try String(contentsOfFile: iCalFile)
-        //print(fileContents)
-     // } catch {
-        // contents could not be loaded
-       // print("Couldn't open iCal file.")
-     // }
-   // } else {
-      // example.txt not found!
-     // print("iCal file not found.")
-   // }
+  init(_ fileContents: String) {
+    self.fileContents = fileContents
   }
 
   mutating func parseIcalFile() {
@@ -92,6 +77,7 @@ extension VCalendar {
         guard let calendarComponent: LibicalComponent = icalcomponent_new_from_string(string) else {
             throw ParseError.invalidVCalendar
         }
+      
         var calendar = VCalendar()
         // Parse Prodid
         if let prodid = calendarComponent[ICAL_PRODID_PROPERTY].first?.value {
@@ -119,6 +105,7 @@ extension VCalendar {
             let endDate = endDateString.stringToDateComponents()
             var iCalEvent = VEvent(summary: summary, dtstart: startDate, dtend: endDate)
             iCalEvent.description = description
+            iCalEvent.uid = uid
             calendar.events.append(iCalEvent)
           }
 
