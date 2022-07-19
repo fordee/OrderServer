@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  AdminController.swift
 //  
 //
 //  Created by John Forde on 19/07/22.
@@ -11,7 +11,7 @@ import Fluent
 struct AdminController: RouteCollection {
   func boot(routes: RoutesBuilder) throws {
     let adminRoute = routes.grouped("api", "admin")
-    adminRoute.get(use: getAllHandler)
+    adminRoute.get("reservations", use: getAllHandler)
     adminRoute.post("upload", use: uploadHandler)
   }
 
@@ -34,22 +34,29 @@ struct AdminController: RouteCollection {
     // 2. Parse iCal file
     // 3. Loop and match on reservationId, checkInDate and checkOutDate. If match, skip to the next one.
     // If no match, save reservation.
-    // Need to decide if we delete remaining ones not in iCal file past today.
+    // Need to decide if we delete remaining ones not in iCal file past today. Also, what about updates.
+    let dbReservations = try await getAllHandler(req)
 
     let buffer = try await req.fileio.collectFile(at: path)
     let fileContents = String(buffer: buffer)
 
     let reservations = parseFile(fileContents: fileContents)
-    print(reservations)
-
+    for reservation in reservations {
+      if dbReservations.map({ $0.uid }).contains(reservation.uid) {
+        // Don't save TODO: Do we update?
+        print("\(reservation.reservationId) already exists. Didn't save.")
+      } else {
+        //try await reservation.save(on: req.db)
+        print("Saving \(reservation.reservationId)")
+      }
+    }
     return req.redirect(to: "/")
-
   }
 
   func parseFile(fileContents: String) -> [Reservation] {
     var reservations: [Reservation] = []
-    let pattern = "Reservation URL: https://www.airbnb.com/hosting/reservations/details/(?<id>[A-Z0-9]*)"
-    guard let regex = try? NSRegularExpression(pattern: pattern) else { return reservations } // Fail if it can't be created
+    let reservationIdPattern = "Reservation URL: https://www.airbnb.com/hosting/reservations/details/(?<id>[A-Z0-9]*)"
+    guard let regex = try? NSRegularExpression(pattern: reservationIdPattern) else { return reservations } // Fail if it can't be created
 
     var calendarParser = CalendarParser(fileContents)
     calendarParser.parseIcalFile()
@@ -57,7 +64,16 @@ struct AdminController: RouteCollection {
 
     for event in calendarParser.events {
       if let endDate = event.dtend?.date, let description = event.description {
-        let reservationId = ""
+        var reservationId = ""
+        let range = NSRange(description.startIndex..., in: description)
+        let result = regex.firstMatch(in: description, range: range)
+        print("result: \(String(describing: result?.numberOfRanges))")
+        if result?.numberOfRanges == 2 {
+          if let firstCaptureRange = result?.range(at: 1), let swiftRange = Range(firstCaptureRange, in: description) {
+            //print("result: \(String(describing: description[swiftRange]))")
+            reservationId = String(description[swiftRange])
+          }
+        }
 //        let regex = /Reservation URL: https:\/\/www.airbnb.com\/hosting\/reservations\/details\/(?<id>[A-Z0-9]*)/
 //        do {
 //          if let result = try regex.prefixMatch(in: description) {
@@ -69,7 +85,7 @@ struct AdminController: RouteCollection {
 //        }
         let reservation = Reservation(startDate: event.dtstart.date!, endDate: endDate, reservationId: reservationId, iCalDescription: description, uid: event.uid)
         reservations.append(reservation)
-        print("Event Summary: \(event.summary)")
+        print("Event Summary: \(event.summary!)")
       }
     }
 

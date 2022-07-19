@@ -23,8 +23,9 @@ struct UploadContext: Encodable {
   let username: String
 }
 
-struct ICalUploadContext: Encodable {
+struct AdminContext: Encodable {
   let title: String
+  let reservations: [Reservation]?
 }
 
 struct WebsiteController: RouteCollection {
@@ -58,9 +59,11 @@ struct WebsiteController: RouteCollection {
   }
 
   func adminHandler(_ req: Request) async throws -> View {
-    let context =  ICalUploadContext(title: "Admin")
+    let reservations = try await Reservation.query(on: req.db).all()
+    let context =  AdminContext(title: "Admin", reservations: reservations)
     return try await req.view.render("admin", context)
   }
+
 }
 
 struct ImageUploadData: Content {

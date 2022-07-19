@@ -13,6 +13,7 @@ struct CreateReservation: AsyncMigration {
     try await database.schema("reservations")
       .id()
       .field("start_date", .date, .required)
+      .field("end_date", .date, .required)
       .field("reservation_id", .string, .required)
       .field("ical_description", .string, .required)
       .field("uid", .string, .required)

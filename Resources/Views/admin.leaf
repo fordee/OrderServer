@@ -12,6 +12,25 @@
         Upload
       </button>
     </form>
+    #if(reservations):
+      <table class="table table-bordered table-hover">
+        <thead class="thead-light">
+          <tr>
+            <th>>Reservation Code</th>
+            <th>Check In</th>
+            <th>Check Out</th>
+          </tr>
+        </thead>
+        <tbody>
+        #for(reservation in reservations):
+          <tr>
+            <td><a href="https://www.airbnb.com/hosting/reservations/details/#(reservation.reservationId)">#(reservation.reservationId)</td>
+            <td>#date(reservation.startDate, "dd-MM-yyyy")</td>
+            <td>#date(reservation.endDate, "dd-MM-yyyy")</td>
+          </tr>
+          #endfor
+        </tbody>
+    #endif
   #endexport
 #endextend
 

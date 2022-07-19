@@ -44,6 +44,7 @@ final class Reservation: Model {
     self.endDate = endDate
     self.reservationId = reservationId
     self.iCalDescription = iCalDescription
+    self.uid = uid
     self.createdAt = createdAt
     self.updatedAt = updatedAt
   }
