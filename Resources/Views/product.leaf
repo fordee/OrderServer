@@ -5,6 +5,15 @@
     <img src="#(product.imagePath)" class="rounded float-left alt="#(product.imagePath)"/>
     <h3><a href="/upload/#(product.id)">Upload Picture</a></h3>
     <h2>Price: #(product.price)</h2>
-    <h2>Quantity: #(product.quantity)</h2>
+    <h2>Amount in Stock: #(product.quantity)</h2>
+    <form method="post" action="/#(product.id)/addtocart">
+    
+    <div class="btn-group me-4" role="group">
+      <input type="hidden" id="product" name="product" value=#(product.id)>
+      <input type="hidden" id="price" name="price" value=#(product.price)>
+      <input type="number" class="count" id="quantity" name="quantity" value="1">
+    </div>        
+      <button type="submit" class="btn btn-primary" action="">Add to Cart</button>
+    </form>
   #endexport
 #endextend

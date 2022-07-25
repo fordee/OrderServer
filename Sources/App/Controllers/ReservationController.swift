@@ -8,11 +8,11 @@
 import Vapor
 import Fluent
 
-struct AdminController: RouteCollection {
+struct ReservationController: RouteCollection {
   func boot(routes: RoutesBuilder) throws {
-    let adminRoute = routes.grouped("api", "admin")
+    let adminRoute = routes.grouped("api")
     adminRoute.get("reservations", use: getAllHandler)
-    adminRoute.post("upload", use: uploadHandler)
+    adminRoute.post("reservations", "upload", use: uploadHandler)
   }
 
   func getAllHandler(_ req: Request) async throws -> [Reservation] {

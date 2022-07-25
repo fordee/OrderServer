@@ -1,7 +1,7 @@
 #extend("base"):
   #export("content"):
   <h1>#(title)</h1>
-  <form action="/api/admin/upload/" method="post" enctype="multipart/form-data">
+  <form action="/api/reservations/upload/" method="post" enctype="multipart/form-data">
       <div class="form-group">
         <label for="picture">
             Upload AirBnB iCal file.
@@ -16,7 +16,7 @@
       <table class="table table-bordered table-hover">
         <thead class="thead-light">
           <tr>
-            <th>>Reservation Code</th>
+            <th>Reservation Code</th>
             <th>Check In</th>
             <th>Check Out</th>
           </tr>

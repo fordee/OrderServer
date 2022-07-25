@@ -8,14 +8,14 @@
 import Vapor
 import Fluent
 
-final class CustomerPurchase: Model {
+final class CustomerOrderItem: Model {
   static let schema = "customer_purchases"
 
   @ID
   var id: UUID?
 
-  @Parent(key: "customer_id")
-  var customer: Customer
+  @Parent(key: "customerOrderID")
+  var customerOrder: CustomerOrder
 
   @Field(key: "product_id")
   var productId: String
@@ -35,21 +35,21 @@ final class CustomerPurchase: Model {
 
   init() {}
 
-  init(id: UUID? = nil, customerID: Customer.IDValue, productId: String, price: Double, quantity: Int) {
+  init(id: UUID? = nil, productId: String, price: Double, quantity: Int, customerOrderID: CustomerOrder.IDValue) {
     self.id = id
-    self.$customer.id = customerID
     self.productId = productId
     self.price = price
     self.quantity = quantity
+    self.$customerOrder.id = customerOrderID
   }
 
 }
 
-extension CustomerPurchase: Content {}
+extension CustomerOrderItem: Content {}
 
 struct CreateCustomerPurchaseData: Content {
-  let customerID: UUID
   let productId: String
   let price: Double
   let quantity: Int
+  let customerOrderID: UUID
 }

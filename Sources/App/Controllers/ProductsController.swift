@@ -103,6 +103,10 @@ struct ProductsController: RouteCollection {
     return req.redirect(to: "/")
   }
 
+  func addProductToCartHandler(_ req: Request) async throws -> Response {
+    return req.redirect(to: "/api/product")
+  }
+
 
 }
 

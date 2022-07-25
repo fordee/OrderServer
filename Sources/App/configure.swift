@@ -20,9 +20,11 @@ public func configure(_ app: Application) throws {
   
   app.migrations.add(CreateProduct())
   app.migrations.add(CreateStockPurchase())
-  app.migrations.add(CreateCustomer())
-  app.migrations.add(CreateCustomerPurchase())
+  //app.migrations.add(CreateCustomer())
+
   app.migrations.add(CreateReservation())
+  app.migrations.add(CreateCustomerOrder())
+  app.migrations.add(CreateCustomerOrderItem())
 
   app.logger.logLevel = .debug
 
