@@ -62,7 +62,7 @@ struct WebsiteController: RouteCollection {
     for order in orders {
       let orderReservationId = try await order.$reservation.get(on: req.db).reservationId
       if reservationId == orderReservationId {
-        print("OrderId: \(order.id!)")
+        print("OrderId: \(order.id!)") // TODO: Use API createHandler?
         let id = try order.requireID()
         guard let quantity = Int(data.quantity) else { throw Abort(.notFound) } // TODO: proper error handling
         guard let price = Double(data.price) else { throw Abort(.notFound) }

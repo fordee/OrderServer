@@ -12,7 +12,9 @@ let package = Package(
         .package(url: "https://github.com/vapor/fluent.git", from: "4.0.0"),
         .package(url: "https://github.com/vapor/fluent-postgres-driver.git", from: "2.0.0"),
         .package(url: "https://github.com/vapor/leaf.git", from: "4.0.0"),
-        .package(url: "https://github.com/tbartelmess/swift-ical.git", from: "0.0.8")
+        .package(url: "https://github.com/tbartelmess/swift-ical.git", from: "0.0.8"),
+        //.package(url: "https://github.com/mongodb/mongo-swift-driver", from: "1.3.1")
+        .package(url: "https://github.com/mongodb/mongodb-vapor", from: "1.1.0-beta.1"),
     ],
     targets: [
         .target(
@@ -22,7 +24,8 @@ let package = Package(
                 .product(name: "FluentPostgresDriver", package: "fluent-postgres-driver"),
                 .product(name: "Leaf", package: "leaf"),
                 .product(name: "Vapor", package: "vapor"),
-                .product(name: "SwiftIcal", package: "swift-ical")
+                .product(name: "SwiftIcal", package: "swift-ical"),
+                .product(name: "MongoDBVapor", package: "mongodb-vapor")
             ],
             swiftSettings: [
                 // Enable better optimizations when building in Release configuration. Despite the use of
@@ -31,7 +34,10 @@ let package = Package(
                 .unsafeFlags(["-cross-module-optimization"], .when(configuration: .release))
             ]
         ),
-        .executableTarget(name: "Run", dependencies: [.target(name: "App")]),
+        .executableTarget(name: "Run", dependencies: [
+          .target(name: "App"),
+          .product(name: "MongoDBVapor", package: "mongodb-vapor")
+        ]),
         .testTarget(name: "AppTests", dependencies: [
             .target(name: "App"),
             .product(name: "XCTVapor", package: "vapor"),

@@ -22,5 +22,8 @@ func routes(_ app: Application) throws {
 
   let customerOrderController = CustomerOrdersController()
   try app.register(collection: customerOrderController)
+
+  let mongo = CustomerOrdersMongoController()
+  try app.register(collection: mongo)
   
 }

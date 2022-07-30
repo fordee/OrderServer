@@ -8,7 +8,11 @@
 import Vapor
 import Fluent
 
+
 struct ProductsController: RouteCollection {
+
+
+
   func boot(routes: RoutesBuilder) throws {
     let productsRoutes = routes.grouped("api", "products")
 

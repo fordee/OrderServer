@@ -1,7 +1,11 @@
+
 import Fluent
 import FluentPostgresDriver
 import Leaf
 import Vapor
+import MongoDBVapor
+
+
 
 // configures your application
 public func configure(_ app: Application) throws {
@@ -31,6 +35,9 @@ public func configure(_ app: Application) throws {
   try app.autoMigrate().wait()
   
   app.views.use(.leaf)
+
+  ContentConfiguration.global.use(encoder: ExtendedJSONEncoder(), for: .json)
+  ContentConfiguration.global.use(decoder: ExtendedJSONDecoder(), for: .json)
   
   // register routes
   try routes(app)
