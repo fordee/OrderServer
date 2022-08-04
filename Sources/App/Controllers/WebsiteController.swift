@@ -9,12 +9,20 @@ import Vapor
 import Leaf
 import Fluent
 
+import MongoDBVapor
+
 struct IndexContext: Encodable {
   let title: String
-  let products: [Product]?
+  let products: [MongoProduct]?//[Product]?
 }
 
 struct ProductContext: Encodable {
+  let title: String
+  let product: MongoProduct//Product
+}
+
+
+struct ProductUploadContext: Encodable {
   let title: String
   let product: Product
 }
@@ -34,15 +42,20 @@ struct CartContext: Encodable {
   let orderItems: [CustomerOrderItem]?
 }
 
+struct MongoCartContext: Encodable {
+  let title: String
+  let order: MongoOrder?
+}
+
 struct WebsiteController: RouteCollection {
   let calendar = Calendar.current
   func boot(routes: RoutesBuilder) throws {
     routes.get(use: indexHandler)
-    routes.get("products", ":productID", use: productHandler)
-    routes.get("upload", ":productID", use: uploadHandler)
+    routes.get("products", ":_id", use: productHandler)
+    routes.get("upload", ":_id", use: uploadHandler)
     routes.get("reservations", use: reservationHandler)
     routes.post(":productID", "addtocart", use: addToCartHandler)
-    routes.get("cart", use: cartHandler)
+    routes.get("cart", use: cartMongoHandler)//cartHandler)
   }
 
   func addToCartHandler(_ req: Request) async throws -> Response {
@@ -91,16 +104,26 @@ struct WebsiteController: RouteCollection {
     return try await req.view.render("cart", context)
   }
 
+  func cartMongoHandler(_ req: Request) async throws -> View {
+    //let products = try await Product.query(on: req.db).all()
+    let query: BSONDocument = ["reservationId": "HMRBJSWW93", "status": "submitted"]
+    let order = try await req.orderCollection.findOne(query)
+    let context = MongoCartContext(title: "Shopping Cart", order: order)
+    return try await req.view.render("mongoCart.leaf", context)
+  }
+
   func indexHandler(_ req: Request) async throws -> View {
-    let products = try await Product.query(on: req.db).all()
+    //let products = try await Product.query(on: req.db).all()
+    let products = try await req.findProducts()
     let context = IndexContext(title: "Home Page", products: products)
     return try await req.view.render("index", context)
   }
 
   func productHandler(_ req: Request) async throws -> View {
-    guard let product = try await Product.find(req.parameters.get("productID"), on: req.db) else {
-      throw Abort(.notFound)
-    }
+    let product = try await req.findProduct()
+//    guard let product = try await Product.find(req.parameters.get("productID"), on: req.db) else {
+//      throw Abort(.notFound)
+//    }
     let context = ProductContext(title: product.name, product: product)
     return try await req.view.render("product", context)
   }
@@ -109,7 +132,7 @@ struct WebsiteController: RouteCollection {
     guard let product = try await Product.find(req.parameters.get("productID"), on: req.db) else {
       throw Abort(.notFound)
     }
-    let context = ProductContext(title: "File Upload", product: product)
+    let context = ProductUploadContext(title: "File Upload", product: product)
     return try await req.view.render("upload", context)
   }
 
@@ -160,4 +183,14 @@ struct AddToCartData: Content {
   var quantity: String
   var product: String
   var price: String
+}
+
+extension Request {
+  func findProduct() async throws -> MongoProduct {
+    let objectIdFilter = try getParameterId(parameterName: "_id")
+    guard let product = try await productCollection.findOne(objectIdFilter) else {
+      throw Abort(.notFound, reason: "No order found")
+    }
+    return product
+  }
 }

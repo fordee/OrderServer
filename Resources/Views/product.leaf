@@ -4,8 +4,8 @@
     <h2>#(product.description)</h2>
     <img src="#(product.imagePath)" class="rounded float-left alt="#(product.imagePath)"/>
     <h3><a href="/upload/#(product.id)">Upload Picture</a></h3>
-    <h2>Price: #(product.price)</h2>
-    <h2>Amount in Stock: #(product.quantity)</h2>
+    <h2>Price: #(product.sellingPrice)</h2>
+    <h2>Amount in Stock: #(product.stock)</h2>
     <form method="post" action="/#(product.id)/addtocart">
     
     <div class="btn-group me-4" role="group">

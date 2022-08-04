@@ -8,19 +8,18 @@
           <th></th>
           <th>Product</th>
           <th>Description</th>
-          <th>Price</th>
           <th>Quantity</th>
+          <th>Price</th>
         </tr>
       </thead>
       <tbody>
         #for(product in products):
         <tr>
           <td><img src="#(product.imagePath)" class="mx-auto d-block alt="#(product.imagePath)"/></td>
-          <td><a href="/products/#(product.id)">#(product.name)</td>
+          <td><a href="/products/#(product._id)">#(product.name)</td>
           <td>#(product.description)</td>
-          <td>#(product.price)</td>
-          <td>#(product.quantity)</td>
-
+          <td>#(product.stock)</td>
+          <td>#(product.sellingPrice)</td>
         </tr>
         #endfor
       </tbody>

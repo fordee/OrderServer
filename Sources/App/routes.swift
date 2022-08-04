@@ -23,7 +23,10 @@ func routes(_ app: Application) throws {
   let customerOrderController = CustomerOrdersController()
   try app.register(collection: customerOrderController)
 
-  let mongo = CustomerOrdersMongoController()
-  try app.register(collection: mongo)
-  
+  let mongoOrderController = CustomerOrdersMongoController()
+  try app.register(collection: mongoOrderController)
+
+  let productsMongoController = ProductsMongoController()
+  try app.register(collection: productsMongoController)
+
 }
