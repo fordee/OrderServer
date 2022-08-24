@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  ProductsMongoController.swift
 //  
 //
 //  Created by John Forde on 31/07/22.
@@ -8,31 +8,64 @@
 import Foundation
 import Vapor
 import MongoDBVapor
+import Models
 
 struct ProductsMongoController : RouteCollection {
   func boot(routes: RoutesBuilder) throws {
     let productsRoute = routes.grouped("api", "mongo", "products")
     productsRoute.post(use: createHandler)
     productsRoute.get(use: getAllHandler)
-   // productsRoute.patch(":_id", "updateStatus", use: updateStatusHandler)
-   // productsRoute.patch(":_id", "addOrderItem", use: addOrderItem)
+    productsRoute.get(":_id", use: getHandler)
+    productsRoute.post("upload", ":_id", use: productImageHandler)
+    productsRoute.patch(":_id", use: updateHandler)
+    productsRoute.delete(":_id", use: deleteHandler)
   }
 
   func getAllHandler(_ req: Request) async throws -> [MongoProduct] {
     try await req.findProducts()
   }
 
+  func getHandler(_ req: Request) async throws -> MongoProduct {
+    try await req.findProduct()
+  }
+
+
   func createHandler(_ req: Request) async throws -> MongoProduct {
     try await req.addProduct()
   }
 
-//  func updateStatusHandler(_ req: Request) async throws -> Response {
-//    try await req.updateStatus()
-//  }
+  func updateHandler(_ req: Request) async throws -> Response {
+    try await req.updateProduct()
+  }
 
-//  func addOrderItem(_ req: Request) async throws -> Response {
-//    try await req.addOrderItem()
-//  }
+  func productImageHandler(_ req: Request) async throws -> Response {
+    let objectIdFilter = try req.getParameterId(parameterName: "_id")
+    var product = try await req.findProduct()
+
+    struct Input: Content {
+      var file: File
+    }
+    let data = try req.content.decode(Input.self)
+
+    print("ContentType: \(data.file.filename)")
+    guard let id = product.id else { return req.redirect(to: "/") } // If no id, can't upload image yet.
+
+    let imageName = "/images/" + String("\(id).\(data.file.extension ?? "jpg")")
+
+    product.imagePath = imageName
+
+    print("ImagePath: \(imageName)")
+    let path = req.application.directory.publicDirectory + imageName
+
+    try await req.fileio.writeFile(data.file.data, at: path)
+    let updateDocument: BSONDocument = ["$set": .document(try BSONEncoder().encode(product))]
+    _ = try await req.mongoUpdate(filter: objectIdFilter, updateDocument: updateDocument, collection: req.productCollection)
+    return req.redirect(to: "/")
+  }
+
+  func deleteHandler(_ req: Request) async throws -> Response{
+    try await req.deleteProduct()
+  }
 
 }
 
@@ -45,21 +78,28 @@ extension Request {
     try await productCollection.find().toArray()
   }
 
-  func addProduct() async throws -> MongoProduct {
-    var product = try content.decode(MongoProduct.self)
-
-    do {
-      let result = try await productCollection.insertOne(product)
-      product._id = result?.insertedID.objectIDValue
-
-      return product
-    } catch {
-      // Give a more helpful error message in case of a duplicate key error.
-      if let err = error as? MongoError.WriteError, err.writeFailure?.code == 11000 {
-        throw Abort(.conflict, reason: "Product for: \(product.name) already exists!")
-      }
-      throw Abort(.internalServerError, reason: "Failed to save new product: \(error)")
+  func findProduct() async throws -> MongoProduct {
+    let objectIdFilter = try getParameterId(parameterName: "_id")
+    guard let product =  try await productCollection.findOne(objectIdFilter) else {
+      throw Abort(.notFound)
     }
+    return product
   }
 
+  func addProduct() async throws -> MongoProduct {
+    let product = try content.decode(MongoProduct.self)
+    return try await mongoInsert(product, into: productCollection)
+  }
+
+  func updateProduct() async throws -> Response {
+    let objectIdFilter = try getParameterId(parameterName: "_id")
+    let update = try content.decode(MongoProduct.self)
+    let updateDocument: BSONDocument = ["$set": .document(try BSONEncoder().encode(update))]
+    return try await mongoUpdate(filter: objectIdFilter, updateDocument: updateDocument, collection: productCollection)
+  }
+
+  func deleteProduct() async throws -> Response {
+    let objectIdFilter = try getParameterId(parameterName: "_id")
+    return try await mongoDelete(filter: objectIdFilter, collection: productCollection)
+  }
 }

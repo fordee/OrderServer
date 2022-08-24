@@ -8,6 +8,7 @@
 import Foundation
 import Vapor
 import MongoDBVapor
+import Models
 
 struct CustomerOrdersMongoController: RouteCollection {
   func boot(routes: RoutesBuilder) throws {
@@ -36,7 +37,6 @@ struct CustomerOrdersMongoController: RouteCollection {
   func updateStatusHandler(_ req: Request) async throws -> Response {
     try await req.updateStatus()
   }
-
 }
 
 extension Request {
@@ -46,12 +46,17 @@ extension Request {
 
   func addOrder() async throws -> MongoOrder {
     let createOrder = try content.decode(CreateMongoOrder.self)
-    let newOrder = MongoOrder(reservationId: createOrder.reservationId, status: createOrder.status, paid: false, submittedTime: Date.now)
+    let newOrder = MongoOrder(reservationId: createOrder.reservationId, status: createOrder.status, paid: false, submittedTime: Date.now, items: [])
     return try await mongoInsert(newOrder, into: orderCollection)
   }
 
   func findOrders() async throws -> [MongoOrder] {
     return try await orderCollection.find().toArray()
+  }
+
+  func findOpenOrders(by reservationId: String) async throws -> [MongoOrder] {
+    let filter: BSONDocument = ["reservationId": .string(reservationId), "status": "open"]
+    return try await orderCollection.find(filter).toArray()
   }
 
   func updateStatus() async throws -> Response {
@@ -64,7 +69,7 @@ extension Request {
 
   func addOrderItem() async throws -> Response {
     let objectIdFilter = try getParameterId(parameterName: "_id")
-    let update = try content.decode(MongoOrderItems.self)
+    let update = try content.decode(MongoOrderItem.self)
     let updateDocument: BSONDocument = ["$push": .document(try BSONEncoder().encode(["items": update]))]
     return try await mongoUpdate(filter: objectIdFilter, updateDocument: updateDocument, collection: orderCollection)
   }

@@ -3,14 +3,19 @@
     <h1>#(product.name)</h1>
     <h2>#(product.description)</h2>
     <img src="#(product.imagePath)" class="rounded float-left alt="#(product.imagePath)"/>
-    <h3><a href="/upload/#(product.id)">Upload Picture</a></h3>
+    <h3><a href="/upload/#(product._id)">Upload Picture</a></h3>
     <h2>Price: #(product.sellingPrice)</h2>
     <h2>Amount in Stock: #(product.stock)</h2>
-    <form method="post" action="/#(product.id)/addtocart">
+    <form method="post" action="/#(product._id)/addtocart">
     
     <div class="btn-group me-4" role="group">
-      <input type="hidden" id="product" name="product" value=#(product.id)>
-      <input type="hidden" id="price" name="price" value=#(product.price)>
+      <input type="hidden" id="_id" name="_id" value="#(product._id)">
+      <input type="hidden" id="name" name="name" value="#(product.name)">
+      <input type="hidden" id="description" name="description" value="#(product.description)">
+      <input type="hidden" id="imagePath" name="imagePath" value="#(product.imagePath)">
+      <input type="hidden" id="stock" name="stock" value="#(product.stock)">
+      <input type="hidden" id="sellingPrice" name="sellingPrice" value="#(product.sellingPrice)">
+      <input type="hidden" id="bestByDate" name="bestByDate" value="#(product.bestByDate)">
       <input type="number" class="count" id="quantity" name="quantity" value="1">
     </div>        
       <button type="submit" class="btn btn-primary" action="">Add to Cart</button>

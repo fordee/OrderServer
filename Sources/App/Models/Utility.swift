@@ -7,6 +7,7 @@
 
 import Foundation
 
+
 extension String {
   func sanitized() -> String {
     // see for ressoning on charachrer sets https://superuser.com/a/358861

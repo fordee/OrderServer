@@ -1,7 +1,7 @@
 #extend("base"):
   #export("content"):
   <h1>#(title)</h1>
-  <form action="/api/products/upload/#(product.id)" method="post" enctype="multipart/form-data">
+  <form action="/api/mongo/products/upload/#(product._id)" method="post" enctype="multipart/form-data">
       <div class="form-group">
         <label for="picture">
             Select Picture for #(product.name)

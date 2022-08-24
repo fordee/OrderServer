@@ -8,6 +8,12 @@
 import Foundation
 import Vapor
 import MongoDBVapor
+import Models
+
+extension MongoProduct: Content {}
+extension MongoOrder: Content {}
+extension MongoStockPurchase: Content {}
+extension MongoReservation: Content {}
 
 extension Request {
   func mongoInsert<T: MongoIdentifiable>(_ element: T, into collection: MongoCollection<T>) async throws -> T {
@@ -41,6 +47,21 @@ extension Request {
       return Response(status: .ok)
     } catch {
       throw Abort(.internalServerError, reason: "Failed to update order: \(error)")
+    }
+  }
+
+  func mongoDelete<T>(filter: BSONDocument, collection: MongoCollection<T>) async throws -> Response {
+    do {
+      // since we aren't using an unacknowledged write concern we can expect deleteOne to return a non-nil result.
+      guard let result = try await productCollection.deleteOne(filter) else {
+        throw Abort(.internalServerError, reason: "Unexpectedly nil response from database")
+      }
+      guard result.deletedCount == 1 else {
+        throw Abort(.notFound, reason: "No product with matching id")
+      }
+      return Response(status: .ok)
+    } catch {
+      throw Abort(.internalServerError, reason: "Failed to delete product: \(error)")
     }
   }
 

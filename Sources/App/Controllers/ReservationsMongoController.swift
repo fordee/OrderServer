@@ -1,22 +1,29 @@
 //
-//  AdminController.swift
+//  ReservationsMongoController.swift
 //  
 //
-//  Created by John Forde on 19/07/22.
+//  Created by John Forde on 25/08/22.
 //
 
+import Foundation
 import Vapor
-import Fluent
+import MongoDBVapor
+import Models
 
-struct ReservationController: RouteCollection {
-  func boot(routes: RoutesBuilder) throws {
-    let adminRoute = routes.grouped("api")
-    adminRoute.get("reservations", use: getAllHandler)
-    adminRoute.post("reservations", "upload", use: uploadHandler)
+struct ReservationsMongoController: RouteCollection {
+  func boot(routes: Vapor.RoutesBuilder) throws {
+    let reservationsRoute = routes.grouped("api", "mongo", "reservations")
+    reservationsRoute.post(use: createHandler)
+    reservationsRoute.get(use: getAllHandler)
+    reservationsRoute.post("upload", use: uploadHandler)
   }
 
-  func getAllHandler(_ req: Request) async throws -> [Reservation] {
-    try await Reservation.query(on: req.db).all()
+  func createHandler(_ req: Request) async throws -> MongoReservation {
+    try await req.addReservation()
+  }
+
+  func getAllHandler(_ req: Request) async throws -> [MongoReservation] {
+    try await req.findReservations()
   }
 
   func uploadHandler(_ req: Request) async throws -> Response {
@@ -46,15 +53,15 @@ struct ReservationController: RouteCollection {
         // Don't save TODO: Do we update?
         print("\(reservation.reservationId) already exists. Didn't save.")
       } else {
-        try await reservation.save(on: req.db)
+        //try await reservation.save(on: req.db)
         print("Saving \(reservation.reservationId)")
       }
     }
     return req.redirect(to: "/")
   }
 
-  func parseFile(fileContents: String) -> [Reservation] {
-    var reservations: [Reservation] = []
+  func parseFile(fileContents: String) -> [MongoReservation] {
+    var reservations: [MongoReservation] = []
     let reservationIdPattern = "Reservation URL: https://www.airbnb.com/hosting/reservations/details/(?<id>[A-Z0-9]*)"
     guard let regex = try? NSRegularExpression(pattern: reservationIdPattern) else { return reservations } // Fail if it can't be created
 
@@ -83,7 +90,7 @@ struct ReservationController: RouteCollection {
 //        } catch {
 //          print(error)
 //        }
-        let reservation = Reservation(startDate: event.dtstart.date!, endDate: endDate, reservationId: reservationId, iCalDescription: description, uid: event.uid)
+        let reservation = MongoReservation(reservationId: reservationId, startDate: event.dtstart.date!, endDate: endDate, iCalDescription: description, uid: event.uid)
         reservations.append(reservation)
         print("Event Summary: \(event.summary!)")
       }
@@ -92,9 +99,20 @@ struct ReservationController: RouteCollection {
     return reservations
   }
 
+
 }
 
-struct ICalUpload: Codable {
-  let fileExtension: String
-  let image: Data
+extension Request {
+  var reservationCollection: MongoCollection<MongoReservation> {
+    application.mongoDB.client.db("orderserver").collection("reservations", withType: MongoReservation.self)
+  }
+
+  func findReservations() async throws -> [MongoReservation] {
+    try await reservationCollection.find().toArray()
+  }
+
+  func addReservation() async throws -> MongoReservation {
+    let reservation = try content.decode(MongoReservation.self)
+    return try await mongoInsert(reservation, into: reservationCollection)
+  }
 }
