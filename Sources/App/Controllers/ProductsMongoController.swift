@@ -45,19 +45,27 @@ struct ProductsMongoController : RouteCollection {
     struct Input: Content {
       var file: File
     }
-    let data = try req.content.decode(Input.self)
 
-    print("ContentType: \(data.file.filename)")
+    struct MediaUpload: Codable {
+      let fileExtension: String
+      let image: Data
+    }
+
+    //let mediaUpload = try req.content.decode(MediaUpload.self)
+    let mediaUpload = try JSONDecoder().decode(MediaUpload.self, from: req.body.data!)
+
+    print("ContentType: \(mediaUpload.fileExtension)")
     guard let id = product.id else { return req.redirect(to: "/") } // If no id, can't upload image yet.
 
-    let imageName = "/images/" + String("\(id).\(data.file.extension ?? "jpg")")
+    let imageName = "/images/" + String("\(id).\(mediaUpload.fileExtension)")
 
     product.imagePath = imageName
 
     print("ImagePath: \(imageName)")
     let path = req.application.directory.publicDirectory + imageName
 
-    try await req.fileio.writeFile(data.file.data, at: path)
+    let buffer = ByteBuffer(data: mediaUpload.image)
+    try await req.fileio.writeFile(buffer, at: path)
     let updateDocument: BSONDocument = ["$set": .document(try BSONEncoder().encode(product))]
     _ = try await req.mongoUpdate(filter: objectIdFilter, updateDocument: updateDocument, collection: req.productCollection)
     return req.redirect(to: "/")
@@ -94,6 +102,7 @@ extension Request {
   func updateProduct() async throws -> Response {
     let objectIdFilter = try getParameterId(parameterName: "_id")
     let update = try content.decode(MongoProduct.self)
+    print("update.name: \(update.name)")
     let updateDocument: BSONDocument = ["$set": .document(try BSONEncoder().encode(update))]
     return try await mongoUpdate(filter: objectIdFilter, updateDocument: updateDocument, collection: productCollection)
   }

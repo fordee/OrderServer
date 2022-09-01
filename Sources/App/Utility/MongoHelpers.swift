@@ -14,6 +14,7 @@ extension MongoProduct: Content {}
 extension MongoOrder: Content {}
 extension MongoStockPurchase: Content {}
 extension MongoReservation: Content {}
+extension Reservation: Content {}
 
 extension Request {
   func mongoInsert<T: MongoIdentifiable>(_ element: T, into collection: MongoCollection<T>) async throws -> T {
@@ -40,13 +41,13 @@ extension Request {
       ) else {
         throw Abort(.internalServerError, reason: "Unexpectedly nil response from database")
       }
-      print("result: \(result)")
+      print("updateDocument: \(updateDocument)")
       guard result.matchedCount == 1 else {
-        throw Abort(.notFound, reason: "No order found")
+        throw Abort(.notFound, reason: "No object found")
       }
       return Response(status: .ok)
     } catch {
-      throw Abort(.internalServerError, reason: "Failed to update order: \(error)")
+      throw Abort(.internalServerError, reason: "Failed to update object: \(error)")
     }
   }
 

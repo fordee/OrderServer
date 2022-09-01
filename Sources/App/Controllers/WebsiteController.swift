@@ -160,6 +160,13 @@ struct WebsiteController: RouteCollection {
   }
 
   func indexHandler(_ req: Request) async throws -> View {
+    let reservationsData = ReservationsParser.parseFile()
+    for row in reservationsData.rows {
+      for (key, value) in row {
+        print("key: \(key), value: \(value)")
+      }
+    }
+    
     //let products = try await Product.query(on: req.db).all()
     let products = try await req.findProducts()
     let context = IndexContext(title: "Home Page", products: products)
@@ -180,6 +187,8 @@ struct WebsiteController: RouteCollection {
     let context = ProductUploadContext(title: "File Upload", product: product)
     return try await req.view.render("upload", context)
   }
+
+  
 
 //  func reservationHandler(_ req: Request) async throws -> View {
 //    let reservations = try await Reservation.query(on: req.db).all()

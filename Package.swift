@@ -15,7 +15,8 @@ let package = Package(
         .package(url: "https://github.com/tbartelmess/swift-ical.git", from: "0.0.8"),
         //.package(url: "https://github.com/mongodb/mongo-swift-driver", from: "1.3.1")
         .package(url: "https://github.com/mongodb/mongodb-vapor", from: "1.1.0-beta.1"),
-        .package(url: "https://github.com/fordee/models", branch: "main")
+        .package(url: "https://github.com/fordee/models", branch: "main"),
+        .package(url: "https://github.com/swiftcsv/SwiftCSV.git", from: "0.8.0")
     ],
     targets: [
         .target(
@@ -27,7 +28,8 @@ let package = Package(
                 .product(name: "Vapor", package: "vapor"),
                 .product(name: "SwiftIcal", package: "swift-ical"),
                 .product(name: "MongoDBVapor", package: "mongodb-vapor"),
-                .product(name: "Models", package: "models")
+                .product(name: "Models", package: "models"),
+                .product(name: "SwiftCSV", package: "SwiftCSV")
             ],
             swiftSettings: [
                 // Enable better optimizations when building in Release configuration. Despite the use of
