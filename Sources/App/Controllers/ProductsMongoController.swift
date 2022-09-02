@@ -38,7 +38,7 @@ struct ProductsMongoController : RouteCollection {
     try await req.updateProduct()
   }
 
-  func productImageHandler(_ req: Request) async throws -> Response {
+  func productImageHandler(_ req: Request) async throws -> String {
     let objectIdFilter = try req.getParameterId(parameterName: "_id")
     var product = try await req.findProduct()
 
@@ -55,7 +55,7 @@ struct ProductsMongoController : RouteCollection {
     let mediaUpload = try JSONDecoder().decode(MediaUpload.self, from: req.body.data!)
 
     print("ContentType: \(mediaUpload.fileExtension)")
-    guard let id = product.id else { return req.redirect(to: "/") } // If no id, can't upload image yet.
+    guard let id = product.id else { return "" }//req.redirect(to: "/") } // If no id, can't upload image yet.
 
     let imageName = "/images/" + String("\(id).\(mediaUpload.fileExtension)")
 
@@ -68,7 +68,8 @@ struct ProductsMongoController : RouteCollection {
     try await req.fileio.writeFile(buffer, at: path)
     let updateDocument: BSONDocument = ["$set": .document(try BSONEncoder().encode(product))]
     _ = try await req.mongoUpdate(filter: objectIdFilter, updateDocument: updateDocument, collection: req.productCollection)
-    return req.redirect(to: "/")
+    return path
+    //return req.redirect(to: "/")
   }
 
   func deleteHandler(_ req: Request) async throws -> Response{

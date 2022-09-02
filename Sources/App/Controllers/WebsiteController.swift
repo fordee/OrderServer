@@ -53,40 +53,11 @@ struct WebsiteController: RouteCollection {
   func boot(routes: RoutesBuilder) throws {
     routes.get(use: indexHandler)
     routes.get("products", ":_id", use: productHandler)
-    routes.get("upload", ":_id", use: uploadHandler)
+    //routes.get("upload", ":_id", use: uploadHandler)
     //routes.get("reservations", use: reservationHandler)
     routes.post(":_id", "addtocart", use: addToCartMongoHandler)//addToCartHandler)
     routes.get("cart", use: cartMongoHandler)//cartHandler)
   }
-
-  //  func addToCartHandler(_ req: Request) async throws -> Response {
-  //    let data = try req.content.decode(AddToCartData.self)
-  //    print("quantity: \(data.quantity)")
-  //    print("product: \(data.product)")
-  //    print("price: \(data.price)")
-  //    // Check to see if order exists
-  //    // If not create a new one and assign the reservation
-  //    // If orders exist with status completed, then create a new one
-  //    // If not use existing order
-  //
-  //    let reservationId = "HM4AC8TMNS"
-  //    let orders = try await CustomerOrder.query(on: req.db)
-  //      .all()
-  //
-  //    for order in orders {
-  //      let orderReservationId = try await order.$reservation.get(on: req.db).reservationId
-  //      if reservationId == orderReservationId {
-  //        print("OrderId: \(order.id!)") // TODO: Use API createHandler?
-  //        let id = try order.requireID()
-  //        guard let quantity = Int(data.quantity) else { throw Abort(.notFound) } // TODO: proper error handling
-  //        guard let price = Double(data.price) else { throw Abort(.notFound) }
-  //        let item = CustomerOrderItem(productId: data.product, price: price, quantity: quantity, customerOrderID: id)
-  //        try await item.save(on: req.db)
-  //      }
-  //    }
-  //
-  //    return req.redirect(to: "/")
-  //  }
 
   func addToCartMongoHandler(_ req: Request) async throws -> Response {
     let data = try req.content.decode(AddToCartData.self)
@@ -182,11 +153,11 @@ struct WebsiteController: RouteCollection {
     return try await req.view.render("product", context)
   }
 
-  func uploadHandler(_ req: Request) async throws -> View {
-    let product = try await req.findProduct()
-    let context = ProductUploadContext(title: "File Upload", product: product)
-    return try await req.view.render("upload", context)
-  }
+//  func uploadHandler(_ req: Request) async throws -> View {
+//    let product = try await req.findProduct()
+//    let context = ProductUploadContext(title: "File Upload", product: product)
+//    return try await req.view.render("upload", context)
+//  }
 
   
 
@@ -229,9 +200,9 @@ struct WebsiteController: RouteCollection {
 
 }
 
-struct ImageUploadData: Content {
-  var picture: Data
-}
+//struct ImageUploadData: Content {
+//  var picture: Data
+//}
 
 struct AddToCartData: Content {
   var _id: String
