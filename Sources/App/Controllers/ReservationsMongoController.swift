@@ -63,52 +63,43 @@ struct ReservationsMongoController: RouteCollection {
 //  }
 
   func parseReservations() {
-    let reservationsData = ReservationsParser.parseFile()
-    for row in reservationsData.rows {
-      for (key, value) in row {
-        print("key: \(key), value: \(value)")
-      }
-    }
+//    let reservationsData = ReservationsParser.parseFile()
+//    for row in reservationsData.rows {
+//      for (key, value) in row {
+//        print("key: \(key), value: \(value)")
+//      }
+//    }
   }
 
-  func parseFile(fileContents: String) -> [MongoReservation] {
-    var reservations: [MongoReservation] = []
-    let reservationIdPattern = "Reservation URL: https://www.airbnb.com/hosting/reservations/details/(?<id>[A-Z0-9]*)"
-    guard let regex = try? NSRegularExpression(pattern: reservationIdPattern) else { return reservations } // Fail if it can't be created
-
-    var calendarParser = CalendarParser(fileContents)
-    calendarParser.parseIcalFile()
-    print(calendarParser.events)
-
-    for event in calendarParser.events {
-      if let endDate = event.dtend?.date, let description = event.description {
-        var reservationId = ""
-        let range = NSRange(description.startIndex..., in: description)
-        let result = regex.firstMatch(in: description, range: range)
-        print("result: \(String(describing: result?.numberOfRanges))")
-        if result?.numberOfRanges == 2 {
-          if let firstCaptureRange = result?.range(at: 1), let swiftRange = Range(firstCaptureRange, in: description) {
-            //print("result: \(String(describing: description[swiftRange]))")
-            reservationId = String(description[swiftRange])
-          }
-        }
-//        let regex = /Reservation URL: https:\/\/www.airbnb.com\/hosting\/reservations\/details\/(?<id>[A-Z0-9]*)/
-//        do {
-//          if let result = try regex.prefixMatch(in: description) {
-//            print(result.id)
-//            reservationId = String(result.id)
+//  func parseFile(fileContents: String) -> [MongoReservation] {
+//    var reservations: [MongoReservation] = []
+//    let reservationIdPattern = "Reservation URL: https://www.airbnb.com/hosting/reservations/details/(?<id>[A-Z0-9]*)"
+//    guard let regex = try? NSRegularExpression(pattern: reservationIdPattern) else { return reservations } // Fail if it can't be created
+//
+//    var calendarParser = CalendarParser(fileContents)
+//    calendarParser.parseIcalFile()
+//    print(calendarParser.events)
+//
+//    for event in calendarParser.events {
+//      if let endDate = event.dtend?.date, let description = event.description {
+//        var reservationId = ""
+//        let range = NSRange(description.startIndex..., in: description)
+//        let result = regex.firstMatch(in: description, range: range)
+//        print("result: \(String(describing: result?.numberOfRanges))")
+//        if result?.numberOfRanges == 2 {
+//          if let firstCaptureRange = result?.range(at: 1), let swiftRange = Range(firstCaptureRange, in: description) {
+//            //print("result: \(String(describing: description[swiftRange]))")
+//            reservationId = String(description[swiftRange])
 //          }
-//        } catch {
-//          print(error)
 //        }
-        let reservation = MongoReservation(reservationId: reservationId, startDate: event.dtstart.date!, endDate: endDate, iCalDescription: description, uid: event.uid)
-        reservations.append(reservation)
-        print("Event Summary: \(event.summary!)")
-      }
-    }
-
-    return reservations
-  }
+//        let reservation = MongoReservation(reservationId: reservationId, startDate: event.dtstart.date!, endDate: endDate, iCalDescription: description, uid: event.uid)
+//        reservations.append(reservation)
+//        print("Event Summary: \(event.summary!)")
+//      }
+//    }
+//
+//    return reservations
+//  }
 
 
 }

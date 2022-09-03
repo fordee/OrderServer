@@ -139,12 +139,12 @@ struct WebsiteController: RouteCollection {
   }
 
   func indexHandler(_ req: Request) async throws -> View {
-    let reservationsData = ReservationsParser.parseFile()
-    for row in reservationsData.rows {
-      for (key, value) in row {
-        print("key: \(key), value: \(value)")
-      }
-    }
+    //let reservationsData = ReservationsParser.parseFile()
+//    for row in reservationsData.rows {
+//      for (key, value) in row {
+//        print("key: \(key), value: \(value)")
+//      }
+//    }
     let products = try await req.findProducts()
     let context = IndexContext(title: "Home Page", products: products)
     return try await req.view.render("index", context)
