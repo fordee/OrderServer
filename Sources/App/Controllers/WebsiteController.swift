@@ -14,34 +14,22 @@ import MongoDBVapor
 
 struct IndexContext: Encodable {
   let title: String
-  let products: [MongoProduct]?//[Product]?
+  let products: [MongoProduct]?
 }
 
 struct ProductContext: Encodable {
-  let title: String
-  let product: MongoProduct//Product
-}
-
-
-struct ProductUploadContext: Encodable {
+  let reservervationId: String
   let title: String
   let product: MongoProduct
-}
+  var message: String?
 
-struct UploadContext: Encodable {
-  let title: String
-  let username: String
+  init(reservervationId: String, title: String, product: MongoProduct, message: String? = nil) {
+    self.reservervationId = reservervationId
+    self.title = title
+    self.product = product
+    self.message = message
+  }
 }
-
-struct AdminContext: Encodable {
-  let title: String
-  let reservations: [MongoReservation]?
-}
-
-//struct CartContext: Encodable {
-//  let title: String
-//  let orderItems: [CustomerOrderItem]?
-//}
 
 struct MongoCartContext: Encodable {
   let title: String
@@ -53,29 +41,49 @@ struct WebsiteController: RouteCollection {
   func boot(routes: RoutesBuilder) throws {
     routes.get(use: indexHandler)
     routes.get("products", ":_id", use: productHandler)
-    //routes.get("upload", ":_id", use: uploadHandler)
-    //routes.get("reservations", use: reservationHandler)
     routes.post(":_id", "addtocart", use: addToCartMongoHandler)//addToCartHandler)
     routes.get("cart", use: cartMongoHandler)//cartHandler)
+    //routes.post
   }
 
   func addToCartMongoHandler(_ req: Request) async throws -> Response {
     let data = try req.content.decode(AddToCartData.self)
-    print("product: \(String(describing: data.product))")
 
-    let orders = try await req.findOpenOrders(by: "HMRBJSWW93")//req.findOrders()
+    // Perform validations
+    do {
+      try MongoOrder.validate(content: req)
+    } catch let error as ValidationsError {
+      let message = error.description.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "Unknown error"
+      return req.redirect(to: "/products/\(data.product?._id?.hex ?? "")?message=\(message)")
+    }
+
+    // Ensure we have Stock
+    if let quantity = Int(data.quantity), let stock = Int(data.stock), quantity > stock {
+      let message = "Not enough stock. Your order of \(data.quantity) exceeds stock of \(data.stock)."
+      return req.redirect(to: "/products/\(data.product?._id?.hex ?? "")?message=\(message)")
+    }
+
+    let orders = try await req.findOpenOrders(by: getReservationId())
     print("orders: \(orders)")
     // Should only get one or none back. TODO: what if we get more than one?
     if orders.count == 1 { // user that order
       print("1 order")
-      if let prod = data.product, let quant = Int(data.quantity), let sp = Double(data.sellingPrice) {
-        let fred = MongoOrderItem(product: prod, quantity: quant, price: sp)
-        return try await addOrderItem(fred, to: orders[0], request: req)
+      if let prod = data.product, let stock = Int(data.stock), let quant = Int(data.quantity), let sp = Double(data.sellingPrice) {
+        let orderItem = MongoOrderItem(product: prod, quantity: quant, price: sp)
+        _ = try await addOrderItem(orderItem, to: orders[0], request: req)
+        // Reduce stock by quantity
+        try await req.reduceProduct(productId: data._id, stock: stock , by: quant)
       }
-      //return try await addOrderItemFred(fred, to: orders[0])
     } else if orders.count == 0 { // Create new order
       // TODO: Create new order
       print("No orders.")
+      guard let prod = data.product, let quant = Int(data.quantity), let sp = Double(data.sellingPrice) else {
+        print("Can't get purchase data.")
+        throw Abort(.notFound)
+      }
+      let orderItem = MongoOrderItem(product: prod, quantity: quant, price: sp)
+      let newOrder = MongoOrder(reservationId: getReservationId(), status: .open, paid: false, submittedTime: Date.now, items: [orderItem])
+      _ = try await req.mongoInsert(newOrder, into: req.orderCollection)
     } else { // Error
       print("Error: Too many open orders.")
     }
@@ -117,16 +125,16 @@ struct WebsiteController: RouteCollection {
       response = try await request.mongoUpdate(filter: objectIdFilter, updateDocument: updateDocument, collection: request.orderCollection)
       return response
     }
-
   }
 
+//  func submitOrder(_ req: Request) -> View {
+//
+//  }
+
   func cartMongoHandler(_ req: Request) async throws -> View {
-    //let products = try await Product.query(on: req.db).all()
-    let query: BSONDocument = ["reservationId": "HMRBJSWW93", "status": "open"]
+    let query: BSONDocument = ["reservationId": BSON(stringLiteral: getReservationId()), "status": "open"]
     let order = try await req.orderCollection.findOne(query)
-    //  print("order: \(order)")
     let context = MongoCartContext(title: "Shopping Cart", order: order)
-    //  print("context: \(context)")
     return try await req.view.render("mongoCart.leaf", context)
   }
 
@@ -137,8 +145,6 @@ struct WebsiteController: RouteCollection {
         print("key: \(key), value: \(value)")
       }
     }
-    
-    //let products = try await Product.query(on: req.db).all()
     let products = try await req.findProducts()
     let context = IndexContext(title: "Home Page", products: products)
     return try await req.view.render("index", context)
@@ -146,63 +152,36 @@ struct WebsiteController: RouteCollection {
 
   func productHandler(_ req: Request) async throws -> View {
     let product = try await req.findProduct()
-    //    guard let product = try await Product.find(req.parameters.get("productID"), on: req.db) else {
-    //      throw Abort(.notFound)
-    //    }
-    let context = ProductContext(title: product.name, product: product)
+    let context: ProductContext
+    if let message = req.query[String.self, at: "message"] {
+      context = ProductContext(reservervationId: getReservationId(), title: product.name, product: product, message: message)
+    } else {
+      context = ProductContext(reservervationId: getReservationId(), title: product.name, product: product)
+    }
     return try await req.view.render("product", context)
   }
 
-//  func uploadHandler(_ req: Request) async throws -> View {
-//    let product = try await req.findProduct()
-//    let context = ProductUploadContext(title: "File Upload", product: product)
-//    return try await req.view.render("upload", context)
-//  }
-
-  
-
-//  func reservationHandler(_ req: Request) async throws -> View {
-//    let reservations = try await Reservation.query(on: req.db).all()
-//    let context =  AdminContext(title: "Reservation", reservations: reservations)
-//    return try await req.view.render("reservation", context)
-//  }
-//
-//  func getCurrentReservationIds(_ req: Request) async throws -> [String] {
-//
-//    var dateComponents = DateComponents()
-//    dateComponents.year = 2022
-//    dateComponents.month = 8
-//    dateComponents.day = 7
-//    dateComponents.timeZone = TimeZone.utc
-//    dateComponents.hour = 8
-//    dateComponents.minute = 34
-//    let testDate = calendar.date(from: dateComponents)!
-//    print("testDate: \(testDate)")
-//
-//    let reservations = try await Reservation.query(on: req.db).all()
-//
-//    var reservationIds: [String] = []
-//
-//    for reservation in reservations {
-//      if (calendar.compare(reservation.startDate, to: testDate, toGranularity: .day) == .orderedSame ||
-//          calendar.compare(reservation.startDate, to: testDate, toGranularity: .day) == .orderedAscending) &&
-//          (calendar.compare(reservation.endDate, to: testDate, toGranularity: .day) == .orderedSame ||
-//           calendar.compare(reservation.endDate, to: testDate, toGranularity: .day) == .orderedDescending) {
-//        print("Start Date: \(reservation.startDate) *******************************************************")
-//        //        print(calendar.compare(reservation.startDate, to: testDate, toGranularity: .day) == .orderedSame)
-//        //        print(calendar.compare(reservation.startDate, to: testDate, toGranularity: .day) == .orderedAscending)
-//        //        print(calendar.compare(reservation.endDate, to: testDate, toGranularity: .day) == .orderedDescending)
-//        reservationIds.append(reservation.reservationId)
-//      }
-//    }
-//    return reservationIds
-//  }
-
+  func getReservationId() -> String  {
+    return "HMRBJSWW93"
+  }
 }
 
-//struct ImageUploadData: Content {
-//  var picture: Data
-//}
+extension Request {
+  func reduceProduct(productId: String, stock: Int, by quantity: Int) async throws {
+    assert((stock - quantity) >= 0)
+    let newStock = stock - quantity
+    let objectIdFilter: BSONDocument = ["_id": .objectID(try BSONObjectID(productId))]
+    let update: BSONDocument = ["stock": BSON(integerLiteral: newStock)]
+    let updateDocument: BSONDocument = ["$set": .document(try BSONEncoder().encode(update))]
+    _ = try await mongoUpdate(filter: objectIdFilter, updateDocument: updateDocument, collection: productCollection)
+  }
+}
+
+extension MongoOrder: Validatable {
+  public static func validations(_ validations: inout Validations) {
+    validations.add("quantity", as: Int.self, is: .range(0...99), required: true)
+  }
+}
 
 struct AddToCartData: Content {
   var _id: String
@@ -224,12 +203,3 @@ struct AddToCartData: Content {
   }
 }
 
-//extension Request {
-//  func findProduct() async throws -> MongoProduct {
-//    let objectIdFilter = try getParameterId(parameterName: "_id")
-//    guard let product = try await productCollection.findOne(objectIdFilter) else {
-//      throw Abort(.notFound, reason: "No order found")
-//    }
-//    return product
-//  }
-//}

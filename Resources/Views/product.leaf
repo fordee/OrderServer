@@ -1,5 +1,11 @@
 #extend("base"):
   #export("content"):
+  #if(message):
+    <div class="alert alert-danger" role="alert">
+      Please fix the following errors:<br />
+      #(message)
+    </div>
+#endif
     <h1>#(product.name)</h1>
     <h2>#(product.description)</h2>
     <img src="#(product.imagePath)" class="rounded float-left alt="#(product.imagePath)"/>
