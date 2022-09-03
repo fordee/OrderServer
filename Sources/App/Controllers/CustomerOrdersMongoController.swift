@@ -46,7 +46,7 @@ extension Request {
 
   func addOrder() async throws -> MongoOrder {
     let createOrder = try content.decode(CreateMongoOrder.self)
-    let newOrder = MongoOrder(reservationId: createOrder.reservationId, status: createOrder.status, paid: false, submittedTime: Date.now, items: [])
+    let newOrder = MongoOrder(reservationId: createOrder.reservationId, status: createOrder.status, paid: false, submittedTime: Date(), items: [])
     return try await mongoInsert(newOrder, into: orderCollection)
   }
 
