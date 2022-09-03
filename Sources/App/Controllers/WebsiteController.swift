@@ -82,7 +82,7 @@ struct WebsiteController: RouteCollection {
         throw Abort(.notFound)
       }
       let orderItem = MongoOrderItem(product: prod, quantity: quant, price: sp)
-      let newOrder = MongoOrder(reservationId: getReservationId(), status: .open, paid: false, submittedTime: Date.now, items: [orderItem])
+      let newOrder = MongoOrder(reservationId: getReservationId(), status: .open, paid: false, submittedTime: Date(), items: [orderItem])
       _ = try await req.mongoInsert(newOrder, into: req.orderCollection)
     } else { // Error
       print("Error: Too many open orders.")
