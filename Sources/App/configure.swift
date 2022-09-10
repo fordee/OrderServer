@@ -35,6 +35,7 @@ public func configure(_ app: Application) throws {
   try app.autoMigrate().wait()
   
   app.views.use(.leaf)
+  app.leaf.tags["now"] = NowTag()
 
   ContentConfiguration.global.use(encoder: ExtendedJSONEncoder(), for: .json)
   ContentConfiguration.global.use(decoder: ExtendedJSONDecoder(), for: .json)

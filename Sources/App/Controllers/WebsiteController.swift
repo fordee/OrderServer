@@ -135,6 +135,7 @@ struct WebsiteController: RouteCollection {
     let query: BSONDocument = ["reservationId": BSON(stringLiteral: getReservationId()), "status": "open"]
     let order = try await req.orderCollection.findOne(query)
     let context = MongoCartContext(title: "Shopping Cart", order: order)
+    print("cart context: \(context)")
     return try await req.view.render("mongoCart.leaf", context)
   }
 
@@ -165,6 +166,46 @@ struct WebsiteController: RouteCollection {
     return "HMRBJSWW93"
   }
 }
+
+struct NowTag: LeafTag {
+
+  func render(_ ctx: LeafContext) throws -> LeafData {
+    let formatter = DateFormatter()
+    switch ctx.parameters.count {
+    case 0: formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+    case 1:
+      guard let string = ctx.parameters[0].string else {
+        throw NowTagError()
+      }
+      formatter.dateFormat = string
+    default:
+      throw NowTagError()
+    }
+
+    let dateAsString = formatter.string(from: Date())
+    return LeafData.string(dateAsString)
+  }
+}
+
+struct NowTagError: Error {}
+
+//struct TotalTag: LeafTag {
+//
+//  func render(_ ctx: LeafContext) throws -> LeafData {
+//    guard let quantity = ctx.parameters[0].int else {
+//      throw TotalTagError()
+//    }
+//
+//    guard let price = ctx.parameters[1].double else {
+//      throw TotalTagError()
+//    }
+//
+//    return LeafData.string(String(Double(quantity) * (price)))
+//  }
+//}
+
+struct TotalTagError: Error {}
+
 
 extension Request {
   func reduceProduct(productId: String, stock: Int, by quantity: Int) async throws {
