@@ -14,7 +14,7 @@ struct StockPurchasesMongoController: RouteCollection {
   func boot(routes: RoutesBuilder) throws {
     let stockPurchasesRoutes = routes.grouped("api", "mongo", "stockpurchases")
     stockPurchasesRoutes.post(use: createHandler)
-    //stockPurchasesRoutes.get(":_id", use: updateHandler)
+    stockPurchasesRoutes.get(":_id", use: updateHandler)
     stockPurchasesRoutes.get(use: getAllHandler)
   }
 
@@ -26,9 +26,9 @@ struct StockPurchasesMongoController: RouteCollection {
     try await req.findStockPurchases()
   }
 
-//  func updateHandler(_ req: Request) async throws -> Response {
-//    try await req.updateStockPurchase()
-//  }
+  func updateHandler(_ req: Request) async throws -> Response {
+    try await req.updateStockPurchase()
+  }
 }
 
 extension Request {
@@ -63,10 +63,10 @@ extension Request {
 //    _ = try await mongoUpdate(filter: objectIdFilter, updateDocument: updateDocument, collection: productCollection)
 //  }
 
-//  func updateStockPurchase() async throws -> Response {
-//    let objectIdFilter = try getParameterId(parameterName: "_id")
-//    let update = try content.decode(MongoStockPurchase.self)
-//    let updateDocument: BSONDocument = ["$set": .document(try BSONEncoder().encode(update))]
-//    return try await mongoUpdate(filter: objectIdFilter, updateDocument: updateDocument, collection: stockPurchaseCollection)
-//  }
+  func updateStockPurchase() async throws -> Response {
+    let objectIdFilter = try getParameterId(parameterName: "_id")
+    let update = try content.decode(MongoStockPurchase.self)
+    let updateDocument: BSONDocument = ["$set": .document(try BSONEncoder().encode(update))]
+    return try await mongoUpdate(filter: objectIdFilter, updateDocument: updateDocument, collection: stockPurchaseCollection)
+  }
 }
