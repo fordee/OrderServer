@@ -1,0 +1,27 @@
+#extend("base"):
+  #export("content"):
+  <h2>Shopping Items</h2>
+  #if(orderItems):
+    <table class="table table-bordered table-hover">
+      <thead class="thead-light">
+        <tr>
+          <th>Product</th>
+          <th>Price</th>
+          <th>Quantity</th>
+        </tr>
+      </thead>
+      <tbody>
+        #for(item in orderItems):
+        <tr>
+          <td>#(item.productId)</td>
+          <td>#(item.quantity)</td>
+          <td>#(item.price)</td>
+        </tr>
+        #endfor
+      </tbody>
+    </table>
+  #else:
+    <h2>There aren’t any items in your cart</h2>
+  #endif
+  #endexport
+#endextend

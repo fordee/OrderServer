@@ -1,0 +1,85 @@
+#extend("base"):
+  #export("content"):
+  <h2>Shopping Items</h2>
+  <h3>Reservation Id: #(order.reservationId)</h3>
+  #if(order.items):
+    <table class="table table-bordered table-striped">
+      <thead class="thead-dark">
+        <tr>
+          <th>Product</th>
+          <th>Quantity</th>
+          <th>Price</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <form>
+          <div class="form-group" id="table-rows">
+              #for(item in order.items):
+              <tr>
+                <td>#(item.product.name)</td>
+                <td><input class="quantity fw-bold text-black" min="0" name="quantity" value=#(item.quantity) type="number" id="quantity"></td>
+                <td><p class="price" id="price">#(item.price)</p></td>
+                <td><p class="total" id="total">123</p>
+              </tr>
+              #endfor
+              
+              
+          <div class="form-group">
+        </form>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td></td>
+          <td></td>
+          <td>Total</td>
+          <td><p class="grand-total">123.45</p></td>
+        </tr>
+      </tfoot>
+    </table>
+    <button type="submit" class="btn btn-primary">Submit</button>
+    <script>
+      window.onload = pageLoadedHandler;
+      function pageLoadedHandler() {
+        $(':input').on('change', function(e) {
+          //var price = parseFloat(jQuery(e.target).closest('tr').find('#price')[0].innerText.substring(1));
+          //$(e.target).closest('tr').find('#total')[0].innerText = formatNumberWithDollar(e.target.value * price);
+          calculateTotals();
+        });
+        // precalculate and format totals
+        calculateTotals();
+      }
+
+      function formatNumberWithDollar(number) {
+        let formatting_options = {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2,
+        }
+        let dollarString = new Intl.NumberFormat("en-US", formatting_options);
+        let finalString = dollarString.format(number);
+        return finalString;
+      }
+
+      function calculateTotals() {
+        var prices = $("tr").find("#price");
+        var quantities = $("tr").find("input");
+        var totals = $("tr").find("#total");
+        var grandTotal = 0
+        if (quantities.length > 0) {
+          for (let index = 0; index < quantities.length; index++) {
+            let tot = quantities[index].value * prices[index].innerText.replace("$", "");
+            grandTotal += tot;
+            totals[index].innerText = formatNumberWithDollar(tot);
+            prices[index].innerText = formatNumberWithDollar(prices[index].innerText.replace("$", ""));
+          }
+          $("tfoot td")[3].innerText = formatNumberWithDollar(grandTotal);
+        }
+      }
+    </script>
+  #else:
+    <h2>There aren’t any items in your cart</h2>
+    
+  #endif
+  #endexport
+#endextend
