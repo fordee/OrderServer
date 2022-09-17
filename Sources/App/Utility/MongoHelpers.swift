@@ -51,6 +51,30 @@ extension Request {
     }
   }
 
+  func mongoUpsert<T>(filter: BSONDocument, updateDocument: BSONDocument, collection: MongoCollection<T>) async throws -> Response {
+    do {
+      // since we aren't using an unacknowledged write concern we can expect updateOne to return a non-nil result.
+      guard let result = try await collection.updateOne(
+        filter: filter,
+        update: updateDocument,
+        options: UpdateOptions(upsert: true)
+      ) else {
+        throw Abort(.internalServerError, reason: "Unexpectedly nil response from database")
+      }
+      print("updateDocument: \(updateDocument)")
+      guard result.matchedCount == 1 else {
+        throw Abort(.notFound, reason: "No object found")
+      }
+      return Response(status: .ok)
+    } catch {
+      print("error.localizedDescription: \(error.localizedDescription)")
+      if error.localizedDescription == "Abort.404: No object found" {
+        return Response(status: .ok)
+      }
+      throw Abort(.internalServerError, reason: "Failed to update object: \(error)")
+    }
+  }
+
   func mongoDelete<T>(filter: BSONDocument, collection: MongoCollection<T>) async throws -> Response {
     do {
       // since we aren't using an unacknowledged write concern we can expect deleteOne to return a non-nil result.

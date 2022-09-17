@@ -32,8 +32,8 @@
         <tr>
           <td></td>
           <td></td>
-          <td>Total</td>
-          <td><p class="grand-total">123.45</p></td>
+          <td class="fw-bold text-black">Total</td>
+          <td class="fw-bold text-black"><p class="grand-total">123.45</p></td>
         </tr>
       </tfoot>
     </table>

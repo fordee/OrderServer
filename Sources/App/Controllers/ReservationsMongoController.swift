@@ -115,6 +115,11 @@ extension Request {
 
   func addReservation() async throws -> Reservation {
     let reservation = try content.decode(Reservation.self)
-    return try await mongoInsert(reservation, into: reservationCollection)
+    let updateDocument: BSONDocument = ["$set": .document(try BSONEncoder().encode(reservation))]
+    let filter: BSONDocument = ["reservationId": .string(reservation.reservationId)]
+    let result = try await mongoUpsert(filter: filter, updateDocument: updateDocument, collection: reservationCollection)//(reservation, into: reservationCollection)
+    //let result = try await mongoInsert(reservation, into: reservationCollection)
+    print(result)
+    return reservation
   }
 }
