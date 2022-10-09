@@ -36,6 +36,7 @@ public func configure(_ app: Application) throws {
   
   app.views.use(.leaf)
   app.leaf.tags["now"] = NowTag()
+  //app.http.client.configuration.redirectConfiguration = .disallow
 
   ContentConfiguration.global.use(encoder: ExtendedJSONEncoder(), for: .json)
   ContentConfiguration.global.use(decoder: ExtendedJSONDecoder(), for: .json)

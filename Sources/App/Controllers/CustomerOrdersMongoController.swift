@@ -17,7 +17,7 @@ struct CustomerOrdersMongoController: RouteCollection {
     customerOrdersRoute.get(use: getAllHandler)
     customerOrdersRoute.patch(":_id", "updateStatus", use: updateStatusHandler)
     customerOrdersRoute.patch(":_id", "addOrderItem", use: addOrderItem)
-//    customerOrdersRoute.patch(":name", use: updateHandler)
+    customerOrdersRoute.patch(":_id", "updateStatusItems", use: updateStatusItemsHandler)
 //    customerOrdersRoute.get(":orderID", use: getHandler)
 //    customerOrdersRoute.get(":orderID", "resvervation", use: getReservationHandler)
   }
@@ -36,6 +36,10 @@ struct CustomerOrdersMongoController: RouteCollection {
 
   func updateStatusHandler(_ req: Request) async throws -> Response {
     try await req.updateStatus()
+  }
+
+  func updateStatusItemsHandler(_ req: Request) async throws -> Response {
+    try await req.updateStatusItems(req)
   }
 }
 
@@ -74,4 +78,52 @@ extension Request {
     return try await mongoUpdate(filter: objectIdFilter, updateDocument: updateDocument, collection: orderCollection)
   }
 
+  func updateStatusItems(_ req: Request) async throws -> Response {
+    let objectIdFilter = try getParameterId(parameterName: "_id")
+    let webOrderItem = try content.decode(WebOrderArrays.self)
+
+    var items: [MongoOrderItem] = []
+    for (index, id) in zip(webOrderItem.productIds.indices, webOrderItem.productIds) {
+      let pid: BSONDocument = ["_id": .objectID(try BSONObjectID(id))]
+      if let product = try? await productCollection.findOne(pid) {
+        let item = MongoOrderItem(product: product, quantity: webOrderItem.quantities[index], price: webOrderItem.prices[index])
+        items.append(item)
+      }
+    }
+    // Perform validations
+    if let m = try await validate(items: items, for: req), let message = m.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
+      print("message: \(message)")
+      return Response(status: .custom(code: 408, reasonPhrase: message))
+    }
+    let statusItemsUpdate = StatusItemsUpdate(status: OrderStatus(rawValue: webOrderItem.status) ?? .open, items: items)
+    let updateDocument: BSONDocument = ["$set": .document(try BSONEncoder().encode(statusItemsUpdate))]
+    return try await mongoUpdate(filter: objectIdFilter, updateDocument: updateDocument, collection: orderCollection)
+  }
+
+  func validate(items: [MongoOrderItem], for req: Request) async throws -> String? {
+    var errors: [String] = []
+    let products = try await req.findProducts()
+    for item in items {
+      if let product = products.first(where: { product in
+        return product._id == item.product.id
+      }) {
+        print("Found: \(item.product.id!) stock: \(product.stock), quantity: \(item.quantity)")
+        if product.stock < item.quantity {
+          errors.append("For \(product.name), not enough stock (\(product.stock)) to satisfy your request (\(item.quantity)).")
+        }
+      }
+      if errors.isEmpty { return nil } else { return errors.joined(separator: " ") }
+    }
+    return nil
+  }
+
 }
+
+struct WebOrderArrays: Codable {
+  let status: String
+  let productIds: [String]
+  let quantities: [Int]
+  let prices: [Double]
+}
+
+

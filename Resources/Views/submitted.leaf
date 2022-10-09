@@ -6,7 +6,7 @@
       #(message)
     </div>
   #endif
-  <h2>Shopping Items</h2>
+  <h2>Order Submitted</h2>
   <h3>Reservation Id: #(reservationId)</h3>
   <input type="hidden" id="orderId" value="#(order._id)">
   #if(order.items):
@@ -23,8 +23,8 @@
         #for(item in order.items):
         <tr>
           <td style="display:none;"><p id="productId">#(item.product._id)</p></td>
-          <td><h4>#(item.product.name)</h4> <img src="#(item.product.imagePath)" class="mx-auto d-block alt="#(item.product.imagePath)"/></td>
-          <td><input class="quantity fw-bold text-black" min="0" name="quantity" value=#(item.quantity) type="number" id="quantity"></td>
+          <td>#(item.product.name)</td>
+          <td><p class="quantity" id="quantity" value="#(item.quantity)">#(item.quantity)</td>
           <td><p class="price" id="price">#(item.price)</p></td>
           <td><p class="total" id="total">123</p>
         </tr>
@@ -39,19 +39,17 @@
         </tr>
       </tfoot>
     </table>
-    <button type="submit" class="btn btn-primary" id="save-btn">Proced to Checkout</button>
-    
     <script>
       window.onload = pageLoadedHandler;
       function pageLoadedHandler() {
         $(':input').on('change', function(e) {
-          calculateTotals();
+          calculateTotals2();
         });
         // precalculate and format totals
-        calculateTotals();
+        calculateTotals2();
 
         $("\#save-btn").click(() => {
-          processOrder();
+          processOrder2();
         });
       }
 

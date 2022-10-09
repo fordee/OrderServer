@@ -34,16 +34,74 @@ struct ProductContext: Encodable {
 struct MongoCartContext: Encodable {
   let title: String
   let order: MongoOrder?
+  let reservationId: String
+  var message: String?
+
+  init(title: String, order: MongoOrder?, reservationId: String, message: String? = nil) {
+    self.title = title
+    self.order = order
+    self.reservationId = reservationId
+    self.message = message
+  }
 }
+
+struct OrderConfirmationContext: Encodable {
+  let title: String
+  let order: MongoOrder?
+  let reservationId: String
+}
+
+struct OrderSubmittedContext: Encodable {
+  let title: String
+  let order: MongoOrder?
+
+}
+
+struct LoginContext: Encodable {
+  let title: String
+  let message: String?
+}
+
+struct LoginPost: Content {
+  let reservationId: String
+}
+
+var reservationLoginId: String? = nil // TODO: Handle this global state better.
 
 struct WebsiteController: RouteCollection {
   let calendar = Calendar.current
+
+
   func boot(routes: RoutesBuilder) throws {
     routes.get(use: indexHandler)
     routes.get("products", ":_id", use: productHandler)
     routes.post(":_id", "addtocart", use: addToCartMongoHandler)//addToCartHandler)
     routes.get("cart", use: cartMongoHandler)//cartHandler)
-    //routes.post
+    //routes.get("login", use: loginController)
+    routes.post("login", use: loginPostController)
+    routes.post("order", use: orderController)
+    routes.get("confirmation", use: orderConfirmation)
+    routes.get(":_id", "submitted", use: orderSubmitted)
+  }
+
+  func loginController(_ req: Request) async throws -> View {
+    let context = LoginContext(title: "Login", message: nil)
+    return try await req.view.render("login", context)
+  }
+
+  func loginPostController(_ req: Request) async throws -> Response {
+    let data = try req.content.decode(LoginPost.self)
+    print(data)
+    let reservationId = try await getReservationId(req)
+    print(reservationId)
+    if data.reservationId == reservationId {
+      reservationLoginId = data.reservationId
+    }
+    return req.redirect(to: "/")
+  }
+
+  func orderController(_ req: Request) -> Response {
+    return req.redirect(to: "/")
   }
 
   func addToCartMongoHandler(_ req: Request) async throws -> Response {
@@ -63,7 +121,7 @@ struct WebsiteController: RouteCollection {
       return req.redirect(to: "/products/\(data.product?._id?.hex ?? "")?message=\(message)")
     }
 
-    let orders = try await req.findOpenOrders(by: getReservationId())
+    let orders = try await req.findOpenOrders(by: try await getReservationId(req))
     print("orders: \(orders)")
     // Should only get one or none back. TODO: what if we get more than one?
     if orders.count == 1 { // user that order
@@ -82,7 +140,7 @@ struct WebsiteController: RouteCollection {
         throw Abort(.notFound)
       }
       let orderItem = MongoOrderItem(product: prod, quantity: quant, price: sp)
-      let newOrder = MongoOrder(reservationId: getReservationId(), status: .open, paid: false, submittedTime: Date(), items: [orderItem])
+      let newOrder = MongoOrder(reservationId: try await getReservationId(req), status: .open, paid: false, submittedTime: Date(), items: [orderItem])
       _ = try await req.mongoInsert(newOrder, into: req.orderCollection)
     } else { // Error
       print("Error: Too many open orders.")
@@ -127,43 +185,84 @@ struct WebsiteController: RouteCollection {
     }
   }
 
-//  func submitOrder(_ req: Request) -> View {
-//
-//  }
-
   func cartMongoHandler(_ req: Request) async throws -> View {
-    let query: BSONDocument = ["reservationId": BSON(stringLiteral: getReservationId()), "status": "open"]
+    let reservationId = try await getReservationId(req)
+    if reservationLoginId == nil || reservationLoginId != reservationId {
+      return try await loginController(req)
+    }
+    //let reservationId = try await getReservationId(req)
+    let query: BSONDocument = ["reservationId": BSON(stringLiteral: reservationId), "status": "open"]
     let order = try await req.orderCollection.findOne(query)
-    let context = MongoCartContext(title: "Shopping Cart", order: order)
-    print("cart context: \(context)")
+    let context: MongoCartContext
+
+    if let message = req.query[String.self, at: "message"] {
+      context = MongoCartContext(title: "Shopping Cart", order: order, reservationId: reservationId, message: message)
+      print("message: \(message)")
+    } else {
+      print("order: \(order)")
+      context = MongoCartContext(title: "Shopping Cart", order: order, reservationId: reservationId)
+    }
+
     return try await req.view.render("mongoCart.leaf", context)
   }
 
   func indexHandler(_ req: Request) async throws -> View {
-    //let reservationsData = ReservationsParser.parseFile()
-//    for row in reservationsData.rows {
-//      for (key, value) in row {
-//        print("key: \(key), value: \(value)")
-//      }
-//    }
+    let reservationId = try await getReservationId(req)
+    if reservationLoginId == nil || reservationLoginId != reservationId {
+      return try await loginController(req)
+    }
     let products = try await req.findProducts()
     let context = IndexContext(title: "Home Page", products: products)
     return try await req.view.render("index", context)
   }
 
   func productHandler(_ req: Request) async throws -> View {
+    let reservationId = try await getReservationId(req)
+    if reservationLoginId == nil || reservationLoginId != reservationId {
+      return try await loginController(req)
+    }
     let product = try await req.findProduct()
     let context: ProductContext
     if let message = req.query[String.self, at: "message"] {
-      context = ProductContext(reservervationId: getReservationId(), title: product.name, product: product, message: message)
+      context = try await ProductContext(reservervationId: getReservationId(req), title: product.name, product: product, message: message)
     } else {
-      context = ProductContext(reservervationId: getReservationId(), title: product.name, product: product)
+      context = try await ProductContext(reservervationId: getReservationId(req), title: product.name, product: product)
     }
     return try await req.view.render("product", context)
   }
 
-  func getReservationId() -> String  {
-    return "HMRBJSWW93"
+  func getReservationId(_ req: Request) async throws -> String  {
+    let reservationId = try await req.findCurrentReservationId()
+    if let id = reservationId {
+      return id
+    } else {
+      return "HMRBJSWW93"
+    }
+  }
+
+  func orderConfirmation(_ req: Request) async throws -> View {
+    let reservationId = try await getReservationId(req)
+    if reservationLoginId == nil || reservationLoginId != reservationId {
+      return try await loginController(req)
+    }
+    let query: BSONDocument = ["reservationId": BSON(stringLiteral: reservationId), "status": "open"]
+    let order = try await req.orderCollection.findOne(query)
+    let context = OrderConfirmationContext(title: "Confirm Order", order: order, reservationId: reservationId)
+
+    return try await req.view.render("orderConfirmation.leaf", context)
+  }
+
+  func orderSubmitted(_ req: Request) async throws -> View {
+    let reservationId = try await getReservationId(req)
+    if reservationLoginId == nil || reservationLoginId != reservationId {
+      return try await loginController(req)
+    }
+    let objectIdFilter = try req.getParameterId(parameterName: "_id")
+    //let query: BSONDocument = ["_id": .objectID(id)]//["reservationId": BSON(stringLiteral: reservationId), "status": "submitted"]
+    let order = try await req.orderCollection.findOne(objectIdFilter)
+    let context = OrderConfirmationContext(title: "Order Submitted", order: order, reservationId: reservationId)
+
+    return try await req.view.render("submitted.leaf", context)
   }
 }
 
@@ -188,24 +287,6 @@ struct NowTag: LeafTag {
 }
 
 struct NowTagError: Error {}
-
-//struct TotalTag: LeafTag {
-//
-//  func render(_ ctx: LeafContext) throws -> LeafData {
-//    guard let quantity = ctx.parameters[0].int else {
-//      throw TotalTagError()
-//    }
-//
-//    guard let price = ctx.parameters[1].double else {
-//      throw TotalTagError()
-//    }
-//
-//    return LeafData.string(String(Double(quantity) * (price)))
-//  }
-//}
-
-struct TotalTagError: Error {}
-
 
 extension Request {
   func reduceProduct(productId: String, stock: Int, by quantity: Int) async throws {
