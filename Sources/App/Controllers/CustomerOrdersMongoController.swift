@@ -126,4 +126,13 @@ struct WebOrderArrays: Codable {
   let prices: [Double]
 }
 
+public struct StatusItemsUpdate: Codable {
+  public let status: OrderStatus
+  public let items: [MongoOrderItem]
+
+  public init(status: OrderStatus, items: [MongoOrderItem]) {
+    self.status = status
+    self.items = items
+  }
+}
 
