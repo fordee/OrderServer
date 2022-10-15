@@ -1,0 +1,63 @@
+#extend("base"):
+  #export("content"):
+  #if(message):
+    <div class="alert alert-danger" role="alert">
+      Please fix the following errors:<br />
+      #(message)
+    </div>
+  #endif
+  <h2>Confirm Order</h2>
+  <h3>Reservation Id: #(reservationId)</h3>
+  <input type="hidden" id="orderId" value="#(order._id)">
+  #if(order.items):
+    <table class="table table-bordered table-striped">
+      <thead class="thead-dark">
+        <tr>
+          <th>Product</th>
+          <th>Quantity</th>
+          <th>Price</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        #for(item in order.items):
+        <tr>
+          <td style="display:none;"><p id="productId">#(item.product._id)</p></td>
+          <td><h4>#(item.product.name)</h4> <img src="#(item.product.imagePath)" class="mx-auto d-block alt="#(item.product.imagePath)"/></td>
+          <td><p class="quantity" id="quantity" value="#(item.quantity)">#(item.quantity)</td>
+          <td><p class="price" id="price">#(item.price)</p></td>
+          <td><p class="total" id="total">123</p>
+        </tr>
+        #endfor
+      </tbody>
+      <tfoot>
+        <tr>
+          <td></td>
+          <td></td>
+          <td class="fw-bold text-black">Total</td>
+          <td class="fw-bold text-black"><p class="grand-total">123.45</p></td>
+        </tr>
+      </tfoot>
+    </table>
+    <button type="submit" class="btn btn-primary" id="save-btn">Confirm Order</button>
+    
+    <script>
+      window.onload = pageLoadedHandler;
+      function pageLoadedHandler() {
+        $(':input').on('change', function(e) {
+          calculateTotals2();
+        });
+        // precalculate and format totals
+        calculateTotals2();
+
+        $("\#save-btn").click(() => {
+          processOrder2();
+        });
+      }
+
+    </script>
+  #else:
+    <h2>There aren’t any items in your cart</h2>
+  #endif
+  #endexport
+#endextend

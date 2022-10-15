@@ -1,0 +1,18 @@
+#extend("base"):
+  #export("content"):
+    #if(message):
+        <div class="alert alert-danger" role="alert">
+        Please fix the following errors:<br />
+        #(message)
+        </div>
+    #endif
+    <h1>Login</h1>
+    <p>Enter your reservation id (e.g.: HMRBJSWW93)</p>
+    <form method="post" action="login" autocomplete="off">
+      <div class="btn-group me-4" role="group">
+        <input type="text" class="reservationId fw-bold text-black"  id="reservationId" name="reservationId" value="">
+      </div>
+      <button type="submit" class="btn btn-primary">Login</button>
+    </form>
+  #endexport
+#endextend
