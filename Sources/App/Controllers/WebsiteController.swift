@@ -73,15 +73,15 @@ struct WebsiteController: RouteCollection {
 
 
   func boot(routes: RoutesBuilder) throws {
-    routes.get(use: indexHandler)
-    routes.get("products", ":_id", use: productHandler)
-    routes.post(":_id", "addtocart", use: addToCartMongoHandler)//addToCartHandler)
-    routes.get("cart", use: cartMongoHandler)//cartHandler)
-    //routes.get("login", use: loginController)
-    routes.post("login", use: loginPostController)
-    routes.post("order", use: orderController)
-    routes.get("confirmation", use: orderConfirmation)
-    routes.get(":_id", "submitted", use: orderSubmitted)
+//    routes.get(use: indexHandler)
+//    routes.get("products", ":_id", use: productHandler)
+//    routes.post(":_id", "addtocart", use: addToCartMongoHandler)//addToCartHandler)
+//    routes.get("cart", use: cartMongoHandler)//cartHandler)
+//    //routes.get("login", use: loginController)
+//    routes.post("login", use: loginPostController)
+//    routes.post("order", use: orderController)
+//    routes.get("confirmation", use: orderConfirmation)
+//    routes.get(":_id", "submitted", use: orderSubmitted)
   }
 
   func loginController(_ req: Request) async throws -> View {

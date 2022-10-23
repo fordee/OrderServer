@@ -22,7 +22,12 @@ struct ProductsMongoController : RouteCollection {
   }
 
   func getAllHandler(_ req: Request) async throws -> [MongoProduct] {
-    try await req.findProducts()
+//    var headers = HTTPHeaders()
+//    headers.add(name: .accessControlAllowOrigin, value: "*")
+//    print("headers: \(req.headers)")
+//    req.headers = headers
+//    print("headers after: \(req.headers)")
+    return try await req.findProducts()
   }
 
   func getHandler(_ req: Request) async throws -> MongoProduct {
@@ -84,7 +89,7 @@ extension Request {
   }
 
   func findProducts() async throws -> [MongoProduct] {
-    try await productCollection.find().toArray()
+    return try await productCollection.find().toArray()
   }
 
   func findProduct() async throws -> MongoProduct {
