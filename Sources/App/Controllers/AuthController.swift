@@ -53,14 +53,14 @@ struct AuthController: RouteCollection {
 
   static func generateToken(for reservationId: String) throws -> User {
     let random = [UInt8].random(count: 16).base64
-    let expiryDate = Date.now + TimeInterval(tokenExpireInterval)
+    let expiryDate = Date() + TimeInterval(tokenExpireInterval)
     let user = User(reservationId: reservationId, token: random, expiresIn: String(tokenExpireInterval), expiryDate: expiryDate)
     token = user.token
     return user
   }
 
   static func removeExpiredUsers() {
-    let now = Date.now
+    let now = Date()
     let newUserTokens = userTokens.filter { userToken in
       userToken.expiryDate > now
     }
@@ -79,7 +79,7 @@ struct AuthController: RouteCollection {
       return user
       } else {
       print("failed: \(reservationId)")
-        return User(reservationId: "", token: "", expiresIn: "", expiryDate: Date.now)
+        return User(reservationId: "", token: "", expiresIn: "", expiryDate: Date())
     }
   }
 
