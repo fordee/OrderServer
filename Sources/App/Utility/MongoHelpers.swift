@@ -43,6 +43,7 @@ extension Request {
       }
       print("updateDocument: \(updateDocument)")
       guard result.matchedCount == 1 else {
+        print("matchedCount: \(result.matchedCount)")
         throw Abort(.notFound, reason: "No object found")
       }
       return Response(status: .ok)
@@ -90,11 +91,18 @@ extension Request {
     }
   }
 
-  func getParameterString(parameterName: String) throws -> BSONDocument {
+  func getParameterStringDocument(parameterName: String) throws -> BSONDocument {
     guard let value = self.parameters.get(parameterName) else {
       throw Abort(.internalServerError, reason: "Request unexpectedly missing \(parameterName) parameter")
     }
     return [parameterName: .string(value)]
+  }
+
+  func getParameterString(parameterName: String) throws -> String {
+    guard let value = self.parameters.get(parameterName) else {
+      throw Abort(.internalServerError, reason: "Request unexpectedly missing \(parameterName) parameter")
+    }
+    return value
   }
 
   func getParameterId(parameterName: String) throws -> BSONDocument {
@@ -103,4 +111,5 @@ extension Request {
     }
     return [parameterName: .objectID(try BSONObjectID(value))]
   }
+  
 }

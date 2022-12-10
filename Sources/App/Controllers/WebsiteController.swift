@@ -121,7 +121,7 @@ struct WebsiteController: RouteCollection {
       return req.redirect(to: "/products/\(data.product?._id?.hex ?? "")?message=\(message)")
     }
 
-    let orders = try await req.findOpenOrders(by: try await getReservationId(req))
+    let orders = try await req.findOrders(by: try await getReservationId(req), statuses: ["open"])
     print("orders: \(orders)")
     // Should only get one or none back. TODO: what if we get more than one?
     if orders.count == 1 { // user that order

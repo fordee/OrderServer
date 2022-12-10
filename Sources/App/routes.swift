@@ -35,4 +35,7 @@ func routes(_ app: Application) throws {
   let reservationsMongoController = ReservationsMongoController()
   try app.register(collection: reservationsMongoController)
 
+  let authController = AuthController()
+  try app.register(collection: authController)
+
 }

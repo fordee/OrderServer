@@ -22,11 +22,14 @@ struct ProductsMongoController : RouteCollection {
   }
 
   func getAllHandler(_ req: Request) async throws -> [MongoProduct] {
-//    var headers = HTTPHeaders()
-//    headers.add(name: .accessControlAllowOrigin, value: "*")
-//    print("headers: \(req.headers)")
-//    req.headers = headers
-//    print("headers after: \(req.headers)")
+//    guard let token = AuthController.token, let headerToken = req.headers["Authorization"].first, "BEARER \(token)" == "\(headerToken)" else {
+//      throw Abort(.unauthorized)
+//    }
+    let headerToken = req.headers["Authorization"].first
+    if !AuthController.authorize(token: headerToken) {
+      throw Abort(.unauthorized)
+    }
+
     return try await req.findProducts()
   }
 

@@ -15,6 +15,7 @@ struct CustomerOrdersMongoController: RouteCollection {
     let customerOrdersRoute = routes.grouped("api", "mongo", "orders")
     customerOrdersRoute.post(use: createHandler)
     customerOrdersRoute.get(use: getAllHandler)
+    customerOrdersRoute.get(":reservationId", ":statusString", use: getOrderByReservationId)
     customerOrdersRoute.patch(":_id", "updateStatus", use: updateStatusHandler)
     customerOrdersRoute.patch(":_id", "addOrderItem", use: addOrderItem)
     customerOrdersRoute.patch(":_id", "updateStatusItems", use: updateStatusItemsHandler)
@@ -27,7 +28,29 @@ struct CustomerOrdersMongoController: RouteCollection {
   }
 
   func getAllHandler(_ req: Request) async throws -> [MongoOrder] {
-    try await req.findOrders()//CustomerOrder.query(on: req.db).all()
+    let headerToken = req.headers["Authorization"].first
+    if !AuthController.authorize(token: headerToken) {
+      throw Abort(.unauthorized)
+    }
+//    guard let token = AuthController.token, let headerToken = req.headers["Authorization"].first, "BEARER \(token)" == "\(headerToken)" else {
+//      throw Abort(.unauthorized)
+//    }
+
+    return try await req.findOrders()//CustomerOrder.query(on: req.db).all()
+  }
+
+  func getOrderByReservationId(_ req: Request) async throws -> [MongoOrder] {
+    let reservationId = try req.getParameterString(parameterName: "reservationId")
+    let statusString = try req.getParameterString(parameterName: "statusString")
+    print("statusString: \(statusString)")
+    let statusArray = getStatusArray(from: statusString)
+    print("statusArray: \(statusArray)")
+    return try await req.findOrders(by: reservationId, statuses: statusArray )
+  }
+
+  func getStatusArray(from statusString: String) -> [String] {
+    let statusArray = statusString.components(separatedBy: ",")
+    return statusArray
   }
 
   func createHandler(_ req: Request) async throws -> MongoOrder {
@@ -39,7 +62,7 @@ struct CustomerOrdersMongoController: RouteCollection {
   }
 
   func updateStatusItemsHandler(_ req: Request) async throws -> Response {
-    try await req.updateStatusItems(req)
+    try await req.updateItems(req)
   }
 }
 
@@ -49,8 +72,8 @@ extension Request {
   }
 
   func addOrder() async throws -> MongoOrder {
-    let createOrder = try content.decode(CreateMongoOrder.self)
-    let newOrder = MongoOrder(reservationId: createOrder.reservationId, status: createOrder.status, paid: false, submittedTime: Date(), items: [])
+    let newOrder = try content.decode(MongoOrder.self)
+    //let newOrder = MongoOrder(reservationId: createOrder.reservationId, status: createOrder.status, paid: false, submittedTime: Date(), items: [])
     return try await mongoInsert(newOrder, into: orderCollection)
   }
 
@@ -58,14 +81,24 @@ extension Request {
     return try await orderCollection.find().toArray()
   }
 
-  func findOpenOrders(by reservationId: String) async throws -> [MongoOrder] {
-    let filter: BSONDocument = ["reservationId": .string(reservationId), "status": "open"]
+  func findOrders(by reservationId: String, statuses: [String]) async throws -> [MongoOrder] {
+    let filter: BSONDocument = ["reservationId": .string(reservationId), "$or": .array(createOrQuery(statusArray: statuses))]
     return try await orderCollection.find(filter).toArray()
+  }
+
+  func createOrQuery(statusArray: [String]) -> [BSON] {
+    var resultArray: [BSON] = []
+    for status in statusArray {
+      let element: BSON = ["status": .string(status)]
+      resultArray.append(element)
+    }
+    return resultArray
   }
 
   func updateStatus() async throws -> Response {
     let objectIdFilter = try getParameterId(parameterName: "_id")
     print(objectIdFilter)
+    print(body)
     let update = try content.decode(StatusUpdate.self)
     let updateDocument: BSONDocument = ["$set": .document(try BSONEncoder().encode(update))]
     return try await mongoUpdate(filter: objectIdFilter, updateDocument: updateDocument, collection: orderCollection)
@@ -75,6 +108,13 @@ extension Request {
     let objectIdFilter = try getParameterId(parameterName: "_id")
     let update = try content.decode(MongoOrderItem.self)
     let updateDocument: BSONDocument = ["$push": .document(try BSONEncoder().encode(["items": update]))]
+    return try await mongoUpdate(filter: objectIdFilter, updateDocument: updateDocument, collection: orderCollection)
+  }
+
+  func updateItems(_ req: Request) async throws -> Response {
+    let objectIdFilter = try getParameterId(parameterName: "_id")
+    let statusItemsUpdate = try content.decode(StatusItemsUpdate.self)
+    let updateDocument: BSONDocument = ["$set": .document(try BSONEncoder().encode(statusItemsUpdate))]
     return try await mongoUpdate(filter: objectIdFilter, updateDocument: updateDocument, collection: orderCollection)
   }
 
@@ -117,6 +157,10 @@ extension Request {
     return nil
   }
 
+}
+
+struct StatusFilter: Codable {
+  let statuses: [OrderStatus]
 }
 
 struct WebOrderArrays: Codable {
