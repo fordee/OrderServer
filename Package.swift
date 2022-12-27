@@ -12,7 +12,7 @@ let package = Package(
         .package(url: "https://github.com/vapor/fluent.git", from: "4.0.0"),
         .package(url: "https://github.com/vapor/fluent-postgres-driver.git", from: "2.0.0"),
         .package(url: "https://github.com/vapor/leaf.git", from: "4.0.0"),
-        .package(url: "https://github.com/tbartelmess/swift-ical.git", from: "0.0.8"),
+        //.package(url: "https://github.com/tbartelmess/swift-ical.git", from: "0.0.8"),
         //.package(url: "https://github.com/mongodb/mongo-swift-driver", from: "1.3.1")
         .package(url: "https://github.com/mongodb/mongodb-vapor", from: "1.1.0-beta.1"),
         .package(url: "https://github.com/fordee/models", branch: "main"),
@@ -26,7 +26,7 @@ let package = Package(
                 .product(name: "FluentPostgresDriver", package: "fluent-postgres-driver"),
                 .product(name: "Leaf", package: "leaf"),
                 .product(name: "Vapor", package: "vapor"),
-                .product(name: "SwiftIcal", package: "swift-ical"),
+          //      .product(name: "SwiftIcal", package: "swift-ical"),
                 .product(name: "MongoDBVapor", package: "mongodb-vapor"),
                 .product(name: "Models", package: "models"),
                 .product(name: "SwiftCSV", package: "SwiftCSV"),
