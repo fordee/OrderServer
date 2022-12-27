@@ -18,6 +18,7 @@ struct CustomerOrdersMongoController: RouteCollection {
     customerOrdersRoute.get(":reservationId", ":statusString", use: getOrderByReservationId)
     customerOrdersRoute.patch(":_id", "updateStatus", use: updateStatusHandler)
     customerOrdersRoute.patch(":_id", "addOrderItem", use: addOrderItem)
+    customerOrdersRoute.patch(":_id", "updateItems", use: updateItems)
     customerOrdersRoute.patch(":_id", "updateStatusItems", use: updateStatusItemsHandler)
 //    customerOrdersRoute.get(":orderID", use: getHandler)
 //    customerOrdersRoute.get(":orderID", "resvervation", use: getReservationHandler)
@@ -61,8 +62,12 @@ struct CustomerOrdersMongoController: RouteCollection {
     try await req.updateStatus()
   }
 
-  func updateStatusItemsHandler(_ req: Request) async throws -> Response {
+  func updateItems(_ req: Request) async throws -> Response {
     try await req.updateItems(req)
+  }
+
+  func updateStatusItemsHandler(_ req: Request) async throws -> Response {
+    try await req.updateStatusItems()
   }
 }
 
@@ -95,11 +100,36 @@ extension Request {
     return resultArray
   }
 
+//  func updateStatus() async throws -> Response {
+//    let objectIdFilter = try getParameterId(parameterName: "_id")
+//    print(objectIdFilter)
+//    print(body)
+//    let update = try content.decode(StatusItemsUpdate.self)
+//    let updateDocument: BSONDocument = ["$set": .document(try BSONEncoder().encode(update))]
+//    return try await mongoUpdate(filter: objectIdFilter, updateDocument: updateDocument, collection: orderCollection)
+//  }
+
   func updateStatus() async throws -> Response {
+    let objectIdFilter = try getParameterId(parameterName: "_id")
+
+    let statusUpdate = try content.decode(StatusUpdate.self)
+    //print(update)
+    let updateDocument: BSONDocument
+    if statusUpdate.status == .delivered {
+      let statusDeliveredUpdate = StatusDeliveredTimeUpdate(status: statusUpdate.status)
+      updateDocument = ["$set": .document(try BSONEncoder().encode(statusDeliveredUpdate))]
+    } else {
+      updateDocument = ["$set": .document(try BSONEncoder().encode(statusUpdate))]
+    }
+
+    return try await mongoUpdate(filter: objectIdFilter, updateDocument: updateDocument, collection: orderCollection)
+  }
+
+  func updateStatusItems() async throws -> Response {
     let objectIdFilter = try getParameterId(parameterName: "_id")
     print(objectIdFilter)
     print(body)
-    let update = try content.decode(StatusUpdate.self)
+    let update = try content.decode(StatusItemsUpdate.self)
     let updateDocument: BSONDocument = ["$set": .document(try BSONEncoder().encode(update))]
     return try await mongoUpdate(filter: objectIdFilter, updateDocument: updateDocument, collection: orderCollection)
   }
@@ -113,32 +143,32 @@ extension Request {
 
   func updateItems(_ req: Request) async throws -> Response {
     let objectIdFilter = try getParameterId(parameterName: "_id")
-    let statusItemsUpdate = try content.decode(StatusItemsUpdate.self)
+    let statusItemsUpdate = try content.decode(Array<MongoOrderItem>.self)
     let updateDocument: BSONDocument = ["$set": .document(try BSONEncoder().encode(statusItemsUpdate))]
     return try await mongoUpdate(filter: objectIdFilter, updateDocument: updateDocument, collection: orderCollection)
   }
 
-  func updateStatusItems(_ req: Request) async throws -> Response {
-    let objectIdFilter = try getParameterId(parameterName: "_id")
-    let webOrderItem = try content.decode(WebOrderArrays.self)
-
-    var items: [MongoOrderItem] = []
-    for (index, id) in zip(webOrderItem.productIds.indices, webOrderItem.productIds) {
-      let pid: BSONDocument = ["_id": .objectID(try BSONObjectID(id))]
-      if let product = try? await productCollection.findOne(pid) {
-        let item = MongoOrderItem(product: product, quantity: webOrderItem.quantities[index], price: webOrderItem.prices[index])
-        items.append(item)
-      }
-    }
-    // Perform validations
-    if let m = try await validate(items: items, for: req), let message = m.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
-      print("message: \(message)")
-      return Response(status: .custom(code: 408, reasonPhrase: message))
-    }
-    let statusItemsUpdate = StatusItemsUpdate(status: OrderStatus(rawValue: webOrderItem.status) ?? .open, items: items)
-    let updateDocument: BSONDocument = ["$set": .document(try BSONEncoder().encode(statusItemsUpdate))]
-    return try await mongoUpdate(filter: objectIdFilter, updateDocument: updateDocument, collection: orderCollection)
-  }
+//  func updateStatusItems(_ req: Request) async throws -> Response {
+//    let objectIdFilter = try getParameterId(parameterName: "_id")
+//    let webOrderItem = try content.decode(WebOrderArrays.self)
+//
+//    var items: [MongoOrderItem] = []
+//    for (index, id) in zip(webOrderItem.productIds.indices, webOrderItem.productIds) {
+//      let pid: BSONDocument = ["_id": .objectID(try BSONObjectID(id))]
+//      if let product = try? await productCollection.findOne(pid) {
+//        let item = MongoOrderItem(product: product, quantity: webOrderItem.quantities[index], price: webOrderItem.prices[index])
+//        items.append(item)
+//      }
+//    }
+//    // Perform validations
+//    if let m = try await validate(items: items, for: req), let message = m.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
+//      print("message: \(message)")
+//      return Response(status: .custom(code: 408, reasonPhrase: message))
+//    }
+//    let statusItemsUpdate = StatusItemsUpdate(status: OrderStatus(rawValue: webOrderItem.status) ?? .open, items: items, paymentMethod: "")
+//    let updateDocument: BSONDocument = ["$set": .document(try BSONEncoder().encode(statusItemsUpdate))]
+//    return try await mongoUpdate(filter: objectIdFilter, updateDocument: updateDocument, collection: orderCollection)
+//  }
 
   func validate(items: [MongoOrderItem], for req: Request) async throws -> String? {
     var errors: [String] = []
@@ -173,10 +203,21 @@ struct WebOrderArrays: Codable {
 public struct StatusItemsUpdate: Codable {
   public let status: OrderStatus
   public let items: [MongoOrderItem]
+  public let paymentMethod: PaymentMethod
 
-  public init(status: OrderStatus, items: [MongoOrderItem]) {
+  public init(status: OrderStatus, items: [MongoOrderItem], paymentMethod: String) {
     self.status = status
     self.items = items
+    self.paymentMethod = PaymentMethod(rawValue: paymentMethod) ?? .cash
   }
+}
+
+public struct StatusUpdate: Codable {
+  public let status: OrderStatus
+}
+
+public struct StatusDeliveredTimeUpdate: Codable {
+  public let status: OrderStatus
+  public var deliveredTime = Date()
 }
 

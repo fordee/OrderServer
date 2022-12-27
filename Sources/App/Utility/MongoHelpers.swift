@@ -109,6 +109,7 @@ extension Request {
     guard let value = self.parameters.get(parameterName) else {
       throw Abort(.internalServerError, reason: "Request unexpectedly missing \(parameterName) parameter")
     }
+    print("id: \(value)")
     return [parameterName: .objectID(try BSONObjectID(value))]
   }
   

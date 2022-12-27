@@ -22,7 +22,7 @@ struct User: Codable, Content {
   let expiryDate: Date
 }
 
-let tokenExpireInterval = 1200
+let tokenExpireInterval = 1200 * 3
 
 struct AuthController: RouteCollection {
   static var token: String?
