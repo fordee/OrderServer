@@ -63,8 +63,8 @@ struct ProductsMongoController : RouteCollection {
     let mediaUpload = try JSONDecoder().decode(MediaUpload.self, from: req.body.data!)
 
     print("ContentType: \(mediaUpload.fileExtension)")
-    guard let id = product.id else { return "" }//req.redirect(to: "/") } // If no id, can't upload image yet.
-
+    //guard let id = product.id else { return "" }//req.redirect(to: "/") } // If no id, can't upload image yet.
+    let id = String.randomString(length: 16)
     let imageName = "/images/" + String("\(id).\(mediaUpload.fileExtension)")
 
     product.imagePath = imageName
