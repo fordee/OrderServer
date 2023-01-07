@@ -34,6 +34,7 @@ extension Request {
 
   func mongoUpdate<T>(filter: BSONDocument, updateDocument: BSONDocument, collection: MongoCollection<T>) async throws -> Response {
     do {
+      print("updateDocument: \(updateDocument)")
       // since we aren't using an unacknowledged write concern we can expect updateOne to return a non-nil result.
       guard let result = try await collection.updateOne(
         filter: filter,
@@ -41,7 +42,7 @@ extension Request {
       ) else {
         throw Abort(.internalServerError, reason: "Unexpectedly nil response from database")
       }
-      print("updateDocument: \(updateDocument)")
+
       guard result.matchedCount == 1 else {
         print("matchedCount: \(result.matchedCount)")
         throw Abort(.notFound, reason: "No object found")

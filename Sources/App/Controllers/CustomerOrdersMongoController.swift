@@ -15,6 +15,7 @@ struct CustomerOrdersMongoController: RouteCollection {
     let customerOrdersRoute = routes.grouped("api", "mongo", "orders")
     customerOrdersRoute.post(use: createHandler)
     customerOrdersRoute.get(use: getAllHandler)
+    customerOrdersRoute.get("order", ":_id", use: getOrderByOrderId)
     customerOrdersRoute.get(":reservationId", ":statusString", use: getOrderByReservationId)
     customerOrdersRoute.patch(":_id", "updateStatus", use: updateStatusHandler)
     customerOrdersRoute.patch(":_id", "addOrderItem", use: addOrderItem)
@@ -26,6 +27,10 @@ struct CustomerOrdersMongoController: RouteCollection {
 
   func addOrderItem(_ req: Request) async throws -> Response {
     try await req.addOrderItem()
+  }
+
+  func getOrderByOrderId(_ req: Request) async throws -> MongoOrder {
+    try await req.findOrder()
   }
 
   func getAllHandler(_ req: Request) async throws -> [MongoOrder] {
@@ -86,6 +91,14 @@ extension Request {
     return try await orderCollection.find().toArray()
   }
 
+  func findOrder() async throws -> MongoOrder {
+    let objectIdFilter = try getParameterId(parameterName: "_id")
+    guard let order = try await orderCollection.find(objectIdFilter).next() else {
+      throw Abort(.notFound)
+    }
+    return order
+  }
+
   func findOrders(by reservationId: String, statuses: [String]) async throws -> [MongoOrder] {
     let filter: BSONDocument = ["reservationId": .string(reservationId), "$or": .array(createOrQuery(statusArray: statuses))]
     return try await orderCollection.find(filter).toArray()
@@ -99,15 +112,6 @@ extension Request {
     }
     return resultArray
   }
-
-//  func updateStatus() async throws -> Response {
-//    let objectIdFilter = try getParameterId(parameterName: "_id")
-//    print(objectIdFilter)
-//    print(body)
-//    let update = try content.decode(StatusItemsUpdate.self)
-//    let updateDocument: BSONDocument = ["$set": .document(try BSONEncoder().encode(update))]
-//    return try await mongoUpdate(filter: objectIdFilter, updateDocument: updateDocument, collection: orderCollection)
-//  }
 
   func updateStatus() async throws -> Response {
     let objectIdFilter = try getParameterId(parameterName: "_id")
@@ -127,10 +131,17 @@ extension Request {
 
   func updateStatusItems() async throws -> Response {
     let objectIdFilter = try getParameterId(parameterName: "_id")
-    print(objectIdFilter)
-    print(body)
-    let update = try content.decode(StatusItemsUpdate.self)
-    let updateDocument: BSONDocument = ["$set": .document(try BSONEncoder().encode(update))]
+
+    let statusUpdate = try content.decode(StatusItemsUpdate.self)
+    //print(update)
+    let updateDocument: BSONDocument
+    if statusUpdate.status == .delivered {
+      let statusDeliveredUpdate = StatusDeliveredTimeUpdate(status: statusUpdate.status)
+      updateDocument = ["$set": .document(try BSONEncoder().encode(statusDeliveredUpdate))]
+    } else {
+      updateDocument = ["$set": .document(try BSONEncoder().encode(statusUpdate))]
+    }
+
     return try await mongoUpdate(filter: objectIdFilter, updateDocument: updateDocument, collection: orderCollection)
   }
 
@@ -147,28 +158,6 @@ extension Request {
     let updateDocument: BSONDocument = ["$set": .document(try BSONEncoder().encode(statusItemsUpdate))]
     return try await mongoUpdate(filter: objectIdFilter, updateDocument: updateDocument, collection: orderCollection)
   }
-
-//  func updateStatusItems(_ req: Request) async throws -> Response {
-//    let objectIdFilter = try getParameterId(parameterName: "_id")
-//    let webOrderItem = try content.decode(WebOrderArrays.self)
-//
-//    var items: [MongoOrderItem] = []
-//    for (index, id) in zip(webOrderItem.productIds.indices, webOrderItem.productIds) {
-//      let pid: BSONDocument = ["_id": .objectID(try BSONObjectID(id))]
-//      if let product = try? await productCollection.findOne(pid) {
-//        let item = MongoOrderItem(product: product, quantity: webOrderItem.quantities[index], price: webOrderItem.prices[index])
-//        items.append(item)
-//      }
-//    }
-//    // Perform validations
-//    if let m = try await validate(items: items, for: req), let message = m.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
-//      print("message: \(message)")
-//      return Response(status: .custom(code: 408, reasonPhrase: message))
-//    }
-//    let statusItemsUpdate = StatusItemsUpdate(status: OrderStatus(rawValue: webOrderItem.status) ?? .open, items: items, paymentMethod: "")
-//    let updateDocument: BSONDocument = ["$set": .document(try BSONEncoder().encode(statusItemsUpdate))]
-//    return try await mongoUpdate(filter: objectIdFilter, updateDocument: updateDocument, collection: orderCollection)
-//  }
 
   func validate(items: [MongoOrderItem], for req: Request) async throws -> String? {
     var errors: [String] = []

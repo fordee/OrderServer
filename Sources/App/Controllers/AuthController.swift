@@ -41,6 +41,7 @@ struct AuthController: RouteCollection {
     }
     for user in userTokens {
       if "BEARER \(user.token)" == "\(tok)" {
+        print(user.token)
         return true
       }
     }

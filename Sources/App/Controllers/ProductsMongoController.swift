@@ -10,27 +10,90 @@ import Vapor
 import MongoDBVapor
 import Models
 
+enum SortDirection: String, RawRepresentable {
+  case asc = "asc"
+  case desc = "desc"
+}
+
 struct ProductsMongoController : RouteCollection {
   func boot(routes: RoutesBuilder) throws {
     let productsRoute = routes.grouped("api", "mongo", "products")
     productsRoute.post(use: createHandler)
     productsRoute.get(use: getAllHandler)
+    productsRoute.get("paged", ":sort", ":pageSize", ":pageIndex", use: getAllPagedHandler)
+    productsRoute.get("productCount", use: getProductCount)
     productsRoute.get(":_id", use: getHandler)
     productsRoute.post("upload", ":_id", use: productImageHandler)
     productsRoute.patch(":_id", use: updateHandler)
     productsRoute.delete(":_id", use: deleteHandler)
+//    productsRoute.patch(":_id", "updateStockAmount", use: updateStockAmount)
   }
 
+  func getProductCount(_ req: Request) async throws -> Int {
+    try await req.productCount()
+  }
+
+//  func updateStockAmount(_ req: Request) async throws -> MongoProduct {
+//    try await req.updateStockAmount()
+//  }
+
   func getAllHandler(_ req: Request) async throws -> [MongoProduct] {
-//    guard let token = AuthController.token, let headerToken = req.headers["Authorization"].first, "BEARER \(token)" == "\(headerToken)" else {
-//      throw Abort(.unauthorized)
-//    }
     let headerToken = req.headers["Authorization"].first
     if !AuthController.authorize(token: headerToken) {
       throw Abort(.unauthorized)
     }
-
     return try await req.findProducts()
+  }
+
+  func getAllPagedHandler(_ req: Request) async throws -> [MongoProduct] {
+    let headerToken = req.headers["Authorization"].first
+    if !AuthController.authorize(token: headerToken) {
+      throw Abort(.unauthorized)
+    }
+    let sortDirection = SortDirection(rawValue: try req.getParameterString(parameterName: "sort"))
+    var pageSize = Int(try req.getParameterString(parameterName: "pageSize")) ?? 24 // If we can't get page size, use 24
+    var pageIndex = Int(try req.getParameterString(parameterName: "pageIndex")) ?? 0 // If we can't get page number, use 0
+    let category: String? = req.query["category"]//req.getParameterString(parameterName: "category")
+
+    let filteredArray: [MongoProduct]
+    if let category {
+      print("category: \(category)")
+      filteredArray = try await req.findProducts().filter { product in
+        product.categories.contains(category)
+      }
+    } else {
+      print("category is nil")
+      filteredArray = try await req.findProducts()
+    }
+
+    let sortedArray = filteredArray.sorted { lhs, rhs in
+      switch sortDirection {
+      case .asc:
+        return lhs.name < rhs.name
+      case .desc:
+        return lhs.name > rhs.name
+      case .none:
+        print("Error: invalid sort direction.")
+        return lhs.name < rhs.name // Just assume asc
+      }
+    }
+    let maxpageIndex = sortedArray.count / pageSize
+    pageIndex = min(pageIndex, maxpageIndex)
+    let maxPageSize: Int
+    if pageIndex == maxpageIndex {
+      maxPageSize = sortedArray.count - (pageSize * pageIndex)
+    } else {
+      maxPageSize = pageSize
+    }
+    let startIndex = pageSize * pageIndex
+    print("pageIndex: \(pageIndex), maxpageIndex: \(maxpageIndex)")
+    pageSize = min(pageSize, maxPageSize)
+
+
+
+    print("startIndex: \(startIndex)")
+
+    return Array(sortedArray[startIndex..<startIndex + maxPageSize])
   }
 
   func getHandler(_ req: Request) async throws -> MongoProduct {
@@ -87,6 +150,17 @@ struct ProductsMongoController : RouteCollection {
 }
 
 extension Request {
+
+  func productCount() async throws -> Int {
+    return try await productCollection.find().toArray().count
+  }
+
+//  func updateStockAmount() async throws -> MongoProduct {
+//    let objectIdFilter = try getParameterId(parameterName: "_id")
+//    let update = try content.decode(MongoProduct.self)
+//    //return MongoProduct(name: "", description: "", imagePath: "", stock: 0, sellingPrice: 0.0)
+//  }
+
   var productCollection: MongoCollection<MongoProduct> {
     application.mongoDB.client.db("orderserver").collection("products", withType: MongoProduct.self)
   }
@@ -111,8 +185,9 @@ extension Request {
   func updateProduct() async throws -> Response {
     let objectIdFilter = try getParameterId(parameterName: "_id")
     let update = try content.decode(MongoProduct.self)
-    print("update.name: \(update.name)")
-    let updateDocument: BSONDocument = ["$set": .document(try BSONEncoder().encode(update))]
+    print("update.stock: \(update.stock)")
+    var updateDocument: BSONDocument = ["$set": .document(try BSONEncoder().encode(update))]
+    print(updateDocument.values)  // ["bestByDate": nil]
     return try await mongoUpdate(filter: objectIdFilter, updateDocument: updateDocument, collection: productCollection)
   }
 
