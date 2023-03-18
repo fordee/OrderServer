@@ -199,7 +199,7 @@ struct WebsiteController: RouteCollection {
       context = MongoCartContext(title: "Shopping Cart", order: order, reservationId: reservationId, message: message)
       print("message: \(message)")
     } else {
-      print("order: \(order)")
+      print("order: \(String(describing: order)))")
       context = MongoCartContext(title: "Shopping Cart", order: order, reservationId: reservationId)
     }
 

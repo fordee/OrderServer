@@ -186,7 +186,7 @@ extension Request {
     let objectIdFilter = try getParameterId(parameterName: "_id")
     let update = try content.decode(MongoProduct.self)
     print("update.stock: \(update.stock)")
-    var updateDocument: BSONDocument = ["$set": .document(try BSONEncoder().encode(update))]
+    let updateDocument: BSONDocument = ["$set": .document(try BSONEncoder().encode(update))]
     print(updateDocument.values)  // ["bestByDate": nil]
     return try await mongoUpdate(filter: objectIdFilter, updateDocument: updateDocument, collection: productCollection)
   }
