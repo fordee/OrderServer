@@ -9,6 +9,7 @@ import Foundation
 import Vapor
 import MongoDBVapor
 import Models
+import APNS
 
 struct CustomerOrdersMongoController: RouteCollection {
   func boot(routes: RoutesBuilder) throws {
@@ -41,8 +42,8 @@ struct CustomerOrdersMongoController: RouteCollection {
 //    guard let token = AuthController.token, let headerToken = req.headers["Authorization"].first, "BEARER \(token)" == "\(headerToken)" else {
 //      throw Abort(.unauthorized)
 //    }
-
-    return try await req.findOrders()//CustomerOrder.query(on: req.db).all()
+    let fred = try await req.findOrders()//CustomerOrder.query(on: req.db).all()
+    return fred
   }
 
   func getOrderByReservationId(_ req: Request) async throws -> [MongoOrder] {
@@ -126,6 +127,17 @@ extension Request {
       updateDocument = ["$set": .document(try BSONEncoder().encode(statusUpdate))]
     }
 
+    if statusUpdate.status == .cancelled {
+      let tokens = try await findTokens()
+
+      let alert = APNSwiftAlert(title: "Order Cancelled", body: "Order has been cancelled.")
+
+      for token in tokens {
+        print("token: \(token.token)")
+        _ = apns.send(alert, to: token.token)
+      }
+    }
+
     return try await mongoUpdate(filter: objectIdFilter, updateDocument: updateDocument, collection: orderCollection)
   }
 
@@ -140,6 +152,17 @@ extension Request {
       updateDocument = ["$set": .document(try BSONEncoder().encode(statusDeliveredUpdate))]
     } else {
       updateDocument = ["$set": .document(try BSONEncoder().encode(statusUpdate))]
+
+      if statusUpdate.status == .submitted {
+        let tokens = try await findTokens()
+
+        let alert = APNSwiftAlert(title: "Order Received", body: "Order for \(statusUpdate.items.count) items received.")
+
+        for token in tokens {
+          print("token: \(token.token)")
+          _ = apns.send(alert, to: token.token)
+        }
+      }
     }
 
     return try await mongoUpdate(filter: objectIdFilter, updateDocument: updateDocument, collection: orderCollection)

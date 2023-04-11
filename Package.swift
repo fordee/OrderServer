@@ -17,6 +17,7 @@ let package = Package(
         .package(url: "https://github.com/mongodb/mongodb-vapor", from: "1.1.0-beta.1"),
         .package(url: "https://github.com/fordee/models", branch: "main"),
         .package(url: "https://github.com/swiftcsv/SwiftCSV.git", from: "0.8.0"),
+        .package(url: "https://github.com/vapor/apns.git", from: "3.0.0"),
     ],
     targets: [
         .target(
@@ -30,6 +31,7 @@ let package = Package(
                 .product(name: "MongoDBVapor", package: "mongodb-vapor"),
                 .product(name: "Models", package: "models"),
                 .product(name: "SwiftCSV", package: "SwiftCSV"),
+                .product(name: "APNS", package: "apns"),
             ],
             swiftSettings: [
                 // Enable better optimizations when building in Release configuration. Despite the use of

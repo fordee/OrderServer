@@ -38,4 +38,6 @@ func routes(_ app: Application) throws {
   let authController = AuthController()
   try app.register(collection: authController)
 
+  let tokenController = TokenController()
+  try app.register(collection: tokenController)
 }

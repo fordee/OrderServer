@@ -15,6 +15,7 @@ extension MongoOrder: Content {}
 extension MongoStockPurchase: Content {}
 extension MongoReservation: Content {}
 extension Reservation: Content {}
+extension Token: Content {}
 
 extension Request {
   func mongoInsert<T: MongoIdentifiable>(_ element: T, into collection: MongoCollection<T>) async throws -> T {

@@ -4,6 +4,8 @@ import FluentPostgresDriver
 import Leaf
 import Vapor
 import MongoDBVapor
+import APNS
+
 //import JWT
 
 
@@ -39,4 +41,14 @@ public func configure(_ app: Application) throws {
   
   // register routes
   try routes(app)
+
+  let apnsEnvironment: APNSwiftConfiguration.Environment
+  apnsEnvironment = app.environment == .production ? .production : .sandbox
+  let auth: APNSwiftConfiguration.AuthenticationMethod = try .jwt(
+    key: .private(filePath: app.directory.publicDirectory + "AuthKey_BFFL65Z935.p8"),
+    keyIdentifier: "BFFL65Z935",
+    teamIdentifier: "322WP4362D"
+  )
+  app.apns.configuration = .init(authenticationMethod: auth, topic: "net.4DWare.ShopAdmin", environment: apnsEnvironment)
+
 }
