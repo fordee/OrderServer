@@ -39,9 +39,9 @@ struct CustomerOrdersMongoController: RouteCollection {
     if !AuthController.authorize(token: headerToken) {
       throw Abort(.unauthorized)
     }
-//    guard let token = AuthController.token, let headerToken = req.headers["Authorization"].first, "BEARER \(token)" == "\(headerToken)" else {
-//      throw Abort(.unauthorized)
-//    }
+    guard let token = AuthController.token, let headerToken = req.headers["Authorization"].first, "BEARER \(token)" == "\(headerToken)" else {
+      throw Abort(.unauthorized)
+    }
     let fred = try await req.findOrders()//CustomerOrder.query(on: req.db).all()
     return fred
   }

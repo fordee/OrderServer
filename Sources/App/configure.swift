@@ -45,7 +45,7 @@ public func configure(_ app: Application) throws {
   let apnsEnvironment: APNSwiftConfiguration.Environment
   apnsEnvironment = app.environment == .production ? .production : .sandbox
   let auth: APNSwiftConfiguration.AuthenticationMethod = try .jwt(
-    key: .private(filePath: app.directory.publicDirectory + "AuthKey_BFFL65Z935.p8"),
+    key: .private(filePath: "/opt/orderserver/AuthKey_BFFL65Z935.p8"),
     keyIdentifier: "BFFL65Z935",
     teamIdentifier: "322WP4362D"
   )
