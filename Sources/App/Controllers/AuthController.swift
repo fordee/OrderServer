@@ -73,7 +73,7 @@ struct AuthController: RouteCollection {
     let reservationId = try await getReservationId(req)
     print("reservationId: \(reservationId)")
     print("apiReservationId: \(apiReservationId)")
-    if apiReservationId == reservationId || apiReservationId == "TOPSECRET" {
+    if apiReservationId.uppercased() == reservationId.uppercased() || apiReservationId.uppercased() == "TOPSECRET" {
       print("success: \(reservationId)")
       let user = try AuthController.generateToken(for: reservationId)
       AuthController.add(user: user)
